@@ -7,6 +7,7 @@ class StereoPair {
 public:
   cv::Mat left, right;
   cv::Mat true_disparity_left, true_disparity_right;
+  cv::Mat disparity_left, disparity_right;
   int base_offset;
 
   StereoPair(cv::Mat _left, cv::Mat _right,
