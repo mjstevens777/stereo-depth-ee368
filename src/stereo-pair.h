@@ -9,6 +9,7 @@ public:
   cv::Mat true_disparity_left, true_disparity_right;
   cv::Mat disparity_left, disparity_right;
   int base_offset;
+  int rows, cols;
 
   StereoPair(cv::Mat _left, cv::Mat _right,
     cv::Mat _true_left, cv::Mat _true_right,
@@ -19,6 +20,8 @@ public:
   true_disparity_right(_true_right),
   base_offset(_base_offset)
   {
+    rows = left.rows;
+    cols = left.cols;
     return;
   }
 };
