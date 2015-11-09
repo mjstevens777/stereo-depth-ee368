@@ -14,6 +14,7 @@ include_directories(${OpenCv_INCLUDE_DIRS})
 
 set(BuildFiles src/main.cpp)
 LIST(APPEND BuildFiles src/dataset.cpp)
+LIST(APPEND BuildFiles src/error-metrics.cpp)
 #LIST(APPEND BuildFiles src/other2.cpp)
 
 add_executable(stereo-depth ${BuildFiles})
