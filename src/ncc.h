@@ -1,0 +1,13 @@
+#include "disparity-algorithm.h"
+
+class NCCDisparity : public DisparityAlgorithm {
+private:
+  StereoPair *pair;
+  cv::Mat get_template(int i, int j, bool left);
+  cv::Mat get_row(int i, cv::Mat im);
+  int best_location(cv::Mat t, cv::Mat row, cv::Mat magnitude);
+  int window_size;
+public:
+  NCCDisparity(int _window_size) : window_size(_window_size) {}
+  NCCDisparity& compute(StereoPair &pair);
+};
