@@ -3,12 +3,14 @@
 #include <opencv2/opencv.hpp>
 #include <fstream>
 #include <cstdlib>
+#include <iostream>
 
 using namespace std;
 using namespace cv;
 
 StereoPair StereoDataset::get_stereo_pair(const string dataset, int illumination, int exposure) {
   char path[1024];
+  cout  << "Loading" << dataset << illumination << exposure << endl;
   snprintf(path, 1024, left_format, dataset.c_str(), illumination, exposure);
   Mat left = imread(path, CV_LOAD_IMAGE_COLOR);
   snprintf(path, 1024, right_format, dataset.c_str(), illumination, exposure);

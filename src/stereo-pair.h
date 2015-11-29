@@ -22,6 +22,8 @@ public:
   {
     rows = left.rows;
     cols = left.cols;
+    left.convertTo(left, CV_32FC3); 
+    right.convertTo(right, CV_32FC3); 
     return;
   }
 };
