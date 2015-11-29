@@ -28,8 +28,12 @@ private:
   // within image boundary (use pair variable)
   // active or has disparity alpha
 
-  edge_weight correspondence_cost(Correspondence c); // Matt
+  edge_weight data_cost(Correspondence c); // Matt
   // Squared error
+
+  edge_weight occ_cost(Correspondence c);
+
+  edge_weight smooth_cost(Correspondence c);
 
   node_index get_index(Correspondence c); // Matt
 

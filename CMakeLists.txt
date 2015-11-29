@@ -16,6 +16,8 @@ set(BuildFiles src/main.cpp)
 LIST(APPEND BuildFiles src/dataset.cpp)
 LIST(APPEND BuildFiles src/error-metrics.cpp)
 LIST(APPEND BuildFiles src/ncc.cpp)
+LIST(APPEND BuildFiles src/graph-cut-lucas.cpp)
+LIST(APPEND BuildFiles src/graph-cut-matt.cpp)
 #LIST(APPEND BuildFiles src/other2.cpp)
 
 add_executable(stereo-depth ${BuildFiles})
