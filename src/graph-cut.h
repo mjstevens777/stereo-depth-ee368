@@ -2,9 +2,15 @@
 
 class GraphCutDisparity : public DisparityAlgorithm {
 private:
+  typedef int node_index;
+  typedef float edge_weight;
+
+  edge_weight Cp;
+  edge_weight V_smooth;
+
 
   typedef struct _Correspondence {
-    int x; 
+    int x;
     int y;
     int d; // disparity
   } Correspondence;
@@ -16,26 +22,23 @@ private:
   // type CV_32SC1
   // disparities = cv::Mat(m, n, CV_32SC1)
 
-
-
-  typedef int node_index;
-  typedef float edge_weight;
-
-  node_index get_index(Correspondence c);
-
-  void add_node(Correspondence c);
-  // add node to the graph
-
-  void add_edge(Correspondence c1, Correspondence c2, edge_weight w);
-  // add edge to the graph from c1 to c2
-  // use get_index(...)
-
-
   bool is_active(Correspondence c);
 
   bool is_valid(Correspondence c, int alpha);
-  // within image boundary
+  // within image boundary (use pair variable)
   // active or has disparity alpha
+
+  edge_weight correspondence_cost(Correspondence c); // Matt
+  // Squared error
+
+  node_index get_index(Correspondence c); // Matt
+
+  void add_node(Correspondence c); // Matt
+  // add node to the graph
+
+  void add_edge(Correspondence c1, Correspondence c2, edge_weight w); // Matt
+  // add edge to the graph from c1 to c2
+  // use get_index(...)
 
 
   std::vector<Correspondence> get_neighbors(Correspondence c);
