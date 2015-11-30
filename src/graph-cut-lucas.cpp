@@ -1,4 +1,6 @@
 #include "graph-cut.h"
-bool GraphCutDisparity::is_valid(Correspondence c, int alpha) {
-  return true;
+
+GraphCutDisparity::edge_weight GraphCutDisparity::smooth_cost(Correspondence c)
+{
+  return 0;
 }
