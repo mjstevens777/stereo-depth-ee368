@@ -49,18 +49,29 @@ vector<GraphCutDisparity::Correspondence> GraphCutDisparity::get_conflicts(Corre
 
 
 void GraphCutDisparity::add_active_node(Correspondence c, int alpha){
+	edge_weight source_w = occ_cost(c);
+	edge_weight sink_w = data_cost(c) + smooth_cost(c);
 
-
+	add_node(c);
+	add_source_edge(c, source_w);
+	add_sink_edge(c, sink_w);
 	return;
 } 
 
 void GraphCutDisparity::add_alpha_node(Correspondence c, int alpha){
+	edge_weight source_w = data_cost(c);
+	edge_weight sink_w = occ_cost(c);
+
+	add_node(c);
+	add_source_edge(c, source_w);
+	add_sink_edge(c, sink_w);
 
 	return;
 } 
 
 void GraphCutDisparity::add_neighbor_edges(Correspondence c, int alpha){
-
+	
+	
 	return;
 } 
 
