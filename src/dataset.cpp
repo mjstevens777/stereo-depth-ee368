@@ -8,6 +8,38 @@
 using namespace std;
 using namespace cv;
 
+StereoPair::StereoPair(cv::Mat _left, cv::Mat _right,
+    cv::Mat _true_left, cv::Mat _true_right,
+    int _base_offset) :
+  left(_left),
+  right(_right),
+  true_disparity_left(_true_left),
+  true_disparity_right(_true_right),
+  base_offset(_base_offset)
+{
+  rows = left.rows;
+  cols = left.cols;
+  left.convertTo(left, CV_32FC3); 
+  right.convertTo(right, CV_32FC3);
+  cvtColor(true_disparity_left, true_disparity_left, CV_BGR2GRAY);
+  cvtColor(true_disparity_right, true_disparity_right, CV_BGR2GRAY);
+
+  double mn, mx;
+  cv::Mat nonzero = (true_disparity_left != 0);
+  nonzero.convertTo(nonzero, CV_8U);
+  minMaxLoc(true_disparity_left, &mn, &mx, NULL, NULL, nonzero);
+  min_disparity_left = mn;
+  max_disparity_left = mx;
+
+  nonzero = (true_disparity_right != 0);
+  nonzero.convertTo(nonzero, CV_8U);
+  minMaxLoc(true_disparity_right, &mn, &mx, NULL, NULL, nonzero);
+  min_disparity_right = mn;
+  max_disparity_right = mx;
+
+  return;
+}
+
 StereoPair StereoDataset::get_stereo_pair(const string dataset, int illumination, int exposure) {
   char path[1024];
   cout  << "Loading" << dataset << illumination << exposure << endl;
@@ -44,7 +76,7 @@ vector<int> StereoDataset::get_all_illuminations() {
 }
 vector<int> StereoDataset::get_all_exposures() {
   vector<int> exposures;
-  for (int i = 1; i <= 3; i++) {
+  for (int i = 0; i <= 2; i++) {
     exposures.push_back(i);
   }
   return exposures;

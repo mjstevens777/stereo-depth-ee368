@@ -47,8 +47,8 @@ int NCCDisparity::best_location(cv::Mat t, cv::Mat row, cv::Mat magnitude) {
   split(row, detections_rgb);
   split(t, t_rgb);
 
-  cv::namedWindow("Best Location", cv::WINDOW_AUTOSIZE);
-  cv::Mat im;
+  // cv::namedWindow("Best Location", cv::WINDOW_AUTOSIZE);
+  // cv::Mat im;
 
   for (int c = 0; c < 3; c++) {
     // subtract mean
@@ -87,8 +87,9 @@ int NCCDisparity::best_location(cv::Mat t, cv::Mat row, cv::Mat magnitude) {
 
   cv::Mat magnitude_roi;
   magnitude(roi).copyTo(magnitude_roi);
-  cv::cvtColor(detections(roi), detections, CV_BGR2GRAY);
-  cv::cvtColor(magnitude_roi, magnitude_roi, CV_BGR2GRAY);
+  detections(roi).copyTo(detections);
+  // cv::cvtColor(detections(roi), detections, CV_BGR2GRAY);
+  // cv::cvtColor(magnitude_roi, magnitude_roi, CV_BGR2GRAY);
 
   // cv::normalize(detections, im, 0, 1, cv::NORM_MINMAX);
   // cv::resize(im, im, cv::Size(0, 0), 3, 20);
@@ -101,9 +102,10 @@ int NCCDisparity::best_location(cv::Mat t, cv::Mat row, cv::Mat magnitude) {
   // cv::waitKey(0);  
 
   cv::divide(detections, magnitude_roi, detections);
+  cv::cvtColor(detections, detections, CV_BGR2GRAY);
 
   // cv::normalize(detections, im, 0, 1, cv::NORM_MINMAX);
-  // cv::resize(im, im, cv::Size(0, 0), 1, 20);
+  // cv::resize(im, im, cv::Size(0, 0), 3, 20);
   // cv::imshow("Best Location", im);
   // cv::waitKey(0);  
 
@@ -113,25 +115,25 @@ int NCCDisparity::best_location(cv::Mat t, cv::Mat row, cv::Mat magnitude) {
   return maxLoc.x;
 }
 
+
+// std = (sum(x^2) - sum(x)^2/n)/n
 cv::Mat NCCDisparity::get_magnitude(cv::Mat im) {
-  cv::Mat im_sq;
+  cv::Mat im_sq, mean_sq; // mean of x^2
   cv::pow(im, 2, im_sq);
-  cv::Mat mean, mean_sq;
-
-  cv::boxFilter(im, mean, -1,
-    cv::Size(window_size, window_size), cv::Point(-1,-1), false, cv::BORDER_CONSTANT);
   cv::boxFilter(im_sq, mean_sq, -1,
-    cv::Size(window_size, window_size), cv::Point(-1,-1), false, cv::BORDER_CONSTANT);
+    cv::Size(window_size, window_size), cv::Point(-1,-1), true, cv::BORDER_CONSTANT);
 
-  cv::Mat cross;
-  cv::multiply(im, mean, cross);
-  cv::multiply(cross, cv::Scalar(2), cross);
+  cv::Mat mean, sq_mean; // (mean of x)^2
+  cv::boxFilter(im, mean, -1,
+    cv::Size(window_size, window_size), cv::Point(-1,-1), true, cv::BORDER_CONSTANT);
+  cv::pow(mean, 2, sq_mean);
 
-  cv::Mat out;
-  cv::subtract(im_sq, cross, out);
-  cv::add(out, mean_sq, out);
+  cv::Mat var, std_dev;
+  // var = mean of x^2 - (mean of x)^2
+  cv::subtract(mean_sq, sq_mean, var);
+  cv::sqrt(var, std_dev);
 
-  return out;
+  return std_dev;
 }
 
 NCCDisparity& NCCDisparity::compute(StereoPair &_pair) {
@@ -160,9 +162,11 @@ NCCDisparity& NCCDisparity::compute(StereoPair &_pair) {
     for (int j = r; j < (pair->rows - r); j++) {
       cv::Mat t_left = get_template(i, j, true);
       // cv::Mat t_right = get_template(i, j, false);
-      int d_left = best_location(t_left, row_right, mag_row_right) - j - pair->base_offset;
+
+      int d_left = j - best_location(t_left, row_right, mag_row_right);
+      
       // int d_right = j - best_location(t_right, row_left, mag_row_left);
-      pair->disparity_left.at<uchar>(i, j) = d_left;
+      pair->disparity_left.at<short>(i, j) = d_left;
       // pair->disparity_right.at<uchar>(i, j) = d_right;
     }
   }

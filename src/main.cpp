@@ -14,6 +14,35 @@ int main(int argc, const char *argv[]) {
   StereoDataset dataset;
   srand (time(NULL));
 
+  for (string name : dataset.get_all_datasets()) {
+    for (int illum : dataset.get_all_illuminations()) {
+      for (int expo : dataset.get_all_exposures()) {
+        StereoPair pair = dataset.get_stereo_pair(name, illum, expo);
+        double err_sum = 0;
+        int count = 0;
+
+        for (int i = 0; i < pair.rows; i++) {
+          for (int j = 0; j < pair.cols; j++) {
+            int d_left = pair.true_disparity_left.at<uchar>(i, j);
+            if (d_left == 0) continue;
+            int j2 = j - d_left;
+            if (j2 < 0 || j2 >= pair.cols) continue;
+            count++;
+            cv::Vec3f col1 = pair.left.at<Vec3f>(i, j);
+            cv::Vec3f col2 = pair.right.at<Vec3f>(i, j2);
+            cv::Vec3f col_diff = col1 - col2;
+
+            err_sum += cv::norm(col_diff) * cv::norm(col_diff);
+
+          }
+        }
+
+        double mse = err_sum / (double) count;
+        cout << mse << endl;
+      }
+    }
+  }
+
   StereoPair pair = dataset.get_random_stereo_pair();
 
   NCCDisparity nd(9);
@@ -37,10 +66,11 @@ int main(int argc, const char *argv[]) {
   cv::imshow("Stereo Pair", im);
   cv::waitKey(0);   
 
-  cv::imshow("Stereo Pair", pair.disparity_left);
+  pair.disparity_left.convertTo(im, CV_8U);
+  cv::imshow("Stereo Pair", im);
   cv::waitKey(0); 
 
-  pair.true_disparity_left.convertTo(im, CV_8UC3);
+  pair.true_disparity_left.convertTo(im, CV_8U);
   cv::imshow("Stereo Pair", im);
   cv::waitKey(0);
 

@@ -10,7 +10,7 @@ private:
   const char *right_format = "./data/%s/Illum%d/Exp%d/view5.png";
   const char *true_left_format = "./data/%s/disp1.png";
   const char *true_right_format = "./data/%s/disp5.png";
-  const char *offset_format = "./data/%s/disp5.png";
+  const char *offset_format = "./data/%s/dmin.txt";
 public:
   StereoPair get_stereo_pair(
     const std::string dataset = "Bowling1",
