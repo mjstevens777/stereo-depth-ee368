@@ -1,10 +1,20 @@
 #pragma once
 #include "disparity-algorithm.h"
 
+#include <map>
+#include <boost/graph/adjacency_list.hpp>
+#include <boost/graph/graph_utility.hpp>
+
+#include <climits>
+
+#include <functional>
+
 class GraphCutDisparity : public DisparityAlgorithm {
 private:
   typedef int node_index;
-  typedef float edge_weight;
+  typedef int edge_weight;
+
+  edge_weight NULL_DISPARITY = INT_MAX;
 
   edge_weight Cp;
   edge_weight V_smooth;
@@ -21,7 +31,7 @@ private:
 #include "graph-cut-extra-matt.h"
 
 #include "graph-cut-extra-lucas.h"
-  
+
   StereoPair *pair;
 
   bool is_active(Correspondence c); // Matt
@@ -74,7 +84,8 @@ private:
 
 
   void initialize_graph(); // Matt
-  void update_correspondences(); // Matt
+  bool update_correspondences(int alpha); // Matt
+  // true if values changed
   bool run_alpha_expansion(int alpha); // Matt
   // true if values changed
 
