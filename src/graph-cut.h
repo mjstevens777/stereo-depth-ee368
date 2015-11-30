@@ -50,7 +50,7 @@ private:
   void add_sink_edge(Correspondence c, edge_weight w); // Matt
 
 
-  std::vector<Correspondence> get_neighbors(Correspondence c); // Lucas
+  std::vector<Correspondence> get_neighbors(Correspondence c, int alpha); // Lucas
   // x +- 1, y +- 1, where is_valid
 
   std::vector<Correspondence> get_conflicts(Correspondence c, int alpha); // Lucas
