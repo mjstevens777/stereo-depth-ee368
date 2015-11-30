@@ -1,5 +1,6 @@
 #include "graph-cut.h"
 #include "opencv2/core/core.hpp"
+#include "opencv2/highgui/highgui.hpp"
 
 #include <boost/graph/boykov_kolmogorov_max_flow.hpp>
 #include <boost/graph/read_dimacs.hpp>
@@ -11,14 +12,22 @@ GraphCutDisparity& GraphCutDisparity::compute(StereoPair &_pair)
 {
   pair = &_pair;
 
-  pair->disparity_left = cv::Mat(pair->rows, pair->cols, CV_8U);
-  pair->disparity_right = cv::Mat(pair->rows, pair->cols, CV_8U);
+  pair->disparity_left = cv::Mat(pair->rows, pair->cols, CV_8UC1);
+  pair->disparity_right = cv::Mat(pair->rows, pair->cols, CV_8UC1);
 
   pair->disparity_left.setTo(NULL_DISPARITY);
   pair->disparity_right.setTo(NULL_DISPARITY);
 
   min_disparity = (pair->min_disparity_left < pair->min_disparity_right) ? pair->min_disparity_left : pair->min_disparity_right;
-  max_disparity = (pair->max_disparity_left > pair->max_disparity_right) ? pair->max_disparity_right : pair->max_disparity_left;
+  max_disparity = (pair->max_disparity_left > pair->max_disparity_right) ? pair->max_disparity_left : pair->max_disparity_right;
+
+  left_occlusion_count = cv::Mat(pair->rows, pair->cols, CV_8UC1);
+  right_occlusion_count = cv::Mat(pair->rows, pair->cols, CV_8UC1);
+
+  cout << "Searching alpha " << min_disparity << "-" << max_disparity << endl;
+
+  cv::imshow("True Disparity", pair->true_disparity_left);
+  cv::waitKey(20);
 
   while (run_iteration()) {}
 
@@ -30,19 +39,25 @@ GraphCutDisparity::GraphCutDisparity() {
 }
 
 bool GraphCutDisparity::is_active(Correspondence c) {
-  return (pair->disparity_left.at<uchar>(c.y, c.x) == c.d);
+  return (pair->disparity_left.at<uchar>(c.y, c.x) == -c.d);
+}
+
+bool GraphCutDisparity::within_bounds(Correspondence c) {
+return (
+    c.x >= 0 and
+    (c.x + c.d) >= 0 and
+    c.y >= 0 and
+    c.x < pair->cols and
+    (c.x + c.d) < pair->cols and
+    c.y < pair->rows
+  );
 }
 
 // within image boundary
 // active or has disparity alpha
 bool GraphCutDisparity::is_valid(Correspondence c, int alpha) {
   return (
-    c.x >= 0 and
-    (c.x + c.d) >= 0 and
-    c.y >= 0 and
-    c.x < pair->cols and
-    (c.x + c.d) < pair->cols and
-    c.y < pair->rows and
+    within_bounds(c) and
     (
       is_active(c) or (c.d == alpha)
     )
@@ -151,7 +166,7 @@ void GraphCutDisparity::for_each_active(function<void(Correspondence)> fn, int a
   for (int y = 0; y < pair->rows; y++) {
     for (int x = 0; x < pair->cols; x++) {
       Correspondence c;
-      c.d = pair->disparity_left.at<uchar>(y, x);
+      c.d = -pair->disparity_left.at<uchar>(y, x);
       if (c.d != NULL_DISPARITY and c.d != alpha) {
         c.x = x;
         c.y = y;
@@ -210,6 +225,24 @@ void GraphCutDisparity::add_all_conflict_edges(int alpha)
   );
 }
 
+void GraphCutDisparity::record_occlusion_count(Correspondence c, int alpha)
+{
+  left_occlusion_count.at<uchar>(c.y, c.x)++;
+  right_occlusion_count.at<uchar>(c.y, c.x + c.d)++;
+}
+
+void GraphCutDisparity::record_occlusion_counts(int alpha)
+{
+  for_each_active(
+    [this, alpha](Correspondence c) { record_occlusion_count(c, alpha); }
+    , alpha
+  );
+  for_each_alpha(
+    [this, alpha](Correspondence c) { record_occlusion_count(c, alpha); }
+    , alpha
+  );
+}
+
 
 void GraphCutDisparity::initialize_graph()
 {
@@ -222,6 +255,8 @@ void GraphCutDisparity::initialize_graph()
   colors = get(boost::vertex_color_t(), g);
 
   hash_to_graph_index.clear();
+  left_occlusion_count.setTo(0);
+  right_occlusion_count.setTo(0);
 
   // Add source / sink
   source = boost::add_vertex(g);
@@ -243,9 +278,11 @@ bool GraphCutDisparity::update_correspondences(int alpha)
       if (col == black) // still active
         return;
       // change to inactive
+      // cout << "Deactivating " << c.x << "," << c.y << "," << c.d << endl;
       changed = true;
       pair->disparity_left.at<uchar>(c.y, c.x) = NULL_DISPARITY;
       pair->disparity_right.at<uchar>(c.y, c.x + c.d) = NULL_DISPARITY;
+      assert(!is_active(c));
     }
     , alpha
   );
@@ -258,15 +295,19 @@ bool GraphCutDisparity::update_correspondences(int alpha)
       Color col = boost::get(colors, node);
       bool now_active = (col != black);
 
-      if (now_active != was_active)
+      if (now_active != was_active) {
         changed = true;
-
-      if (now_active) {
-        pair->disparity_left.at<uchar>(c.y, c.x) = alpha;
-        pair->disparity_right.at<uchar>(c.y, c.x + c.d) = alpha;
-      } else {
-        pair->disparity_left.at<uchar>(c.y, c.x) = NULL_DISPARITY;
-        pair->disparity_right.at<uchar>(c.y, c.x + c.d) = NULL_DISPARITY;
+        if (now_active) {
+          // cout << "Activating " << c.x << "," << c.y << ",alpha" << endl;
+          pair->disparity_left.at<uchar>(c.y, c.x) = -c.d;
+          pair->disparity_right.at<uchar>(c.y, c.x + c.d) = -c.d;
+          assert(is_active(c));
+        } else {
+          // cout << "Deactivating " << c.x << "," << c.y << ",alpha" << endl;
+          pair->disparity_left.at<uchar>(c.y, c.x) = NULL_DISPARITY;
+          pair->disparity_right.at<uchar>(c.y, c.x + c.d) = NULL_DISPARITY;
+          assert(!is_active(c));
+        }
       }
 
     }
@@ -283,6 +324,7 @@ bool GraphCutDisparity::run_alpha_expansion(int alpha)
   initialize_graph();
 
   cout << "Adding nodes" << endl;
+  record_occlusion_counts(alpha);
   add_active_nodes(alpha);
   add_alpha_nodes(alpha);
 
@@ -304,8 +346,11 @@ bool GraphCutDisparity::run_iteration()
 {
   cout << "Running iteration" << endl;
   bool improved = false;
-  for (int alpha = -max_disparity; alpha <= -min_disparity; alpha++) {
-    improved = improved || run_alpha_expansion(alpha);
+  for (int alpha = min_disparity; alpha <= max_disparity; alpha++) {
+    improved = run_alpha_expansion(-alpha) || improved;
+    // assert(run_alpha_expansion(-alpha) == false);
+    cv::imshow("Disparity", pair->disparity_left);
+    cv::waitKey(20);
   }
   return improved;
 }

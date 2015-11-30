@@ -52,3 +52,9 @@ std::map<long, node_index> hash_to_graph_index;
 
 void for_each_active(std::function<void(Correspondence)> fn, int alpha);
 void for_each_alpha(std::function<void(Correspondence)> fn, int alpha);
+
+cv::Mat left_occlusion_count, right_occlusion_count;
+void record_occlusion_count(Correspondence c, int alpha);
+void record_occlusion_counts(int alpha);
+
+bool within_bounds(Correspondence c);

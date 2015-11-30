@@ -2,12 +2,16 @@
 using namespace std;
 
 GraphCutDisparity::edge_weight GraphCutDisparity::occ_cost(Correspondence c) {
-	//TODO
-	return C_CONST;
+	int occ_count = 0;
+	if (left_occlusion_count.at<uchar>(c.y, c.x) == 1)
+		occ_count++;
+	if (right_occlusion_count.at<uchar>(c.y, c.x + c.d) == 1)
+		occ_count++;
+	return C_CONST * occ_count;
 } 
 
 GraphCutDisparity::edge_weight GraphCutDisparity::smooth_cost(Correspondence c){
-	vector<Correspondence> neighbors = get_neighbors(c,c.d);
+	vector<Correspondence> neighbors = get_inactive_neighbors(c,c.d);
 
 	return V_CONST * neighbors.size();
 } 
@@ -21,6 +25,22 @@ vector<GraphCutDisparity::Correspondence> GraphCutDisparity::get_neighbors(Corre
 		Correspondence c_tmp = {c.x + offset[i], c.y + offset[offset.size()-1-i], c.d}; 
 
 		if(is_valid(c_tmp, alpha) ) {
+			neighbors.push_back(c_tmp);
+		}
+	}
+
+	return neighbors;
+} 
+
+vector<GraphCutDisparity::Correspondence> GraphCutDisparity::get_inactive_neighbors(Correspondence c, int alpha){
+	vector<Correspondence> neighbors;
+	vector<int> offset = {0, 0, 1, -1};
+
+	// x +- 1, y +- 1 neighbors, where is_valid
+	for (int i=0; i<offset.size(); i++) {
+		Correspondence c_tmp = {c.x + offset[i], c.y + offset[offset.size()-1-i], c.d}; 
+
+		if(within_bounds(c_tmp) and !is_valid(c_tmp, alpha) ) {
 			neighbors.push_back(c_tmp);
 		}
 	}
