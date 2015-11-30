@@ -19,8 +19,11 @@ int main(int argc, const char *argv[]) {
 
   pair.resize(1.0/3.0);
 
-  NCCDisparity nd(9);
-  nd.compute(pair);
+  // NCCDisparity nd(9);
+  // nd.compute(pair);
+
+  GraphCutDisparity gcd;
+  gcd.compute(pair);
 
   cout << "Left rms: " << ErrorMetrics::get_rms_error_all(pair.true_disparity_left,  pair.disparity_left) << "\n";
   cout << "Right rms: " << ErrorMetrics::get_rms_error_all(pair.true_disparity_right,  pair.disparity_right) << "\n";

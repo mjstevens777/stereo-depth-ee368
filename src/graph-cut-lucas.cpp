@@ -75,7 +75,7 @@ void GraphCutDisparity::add_neighbor_edges(Correspondence c, int alpha){
 
 	for (Correspondence c_tmp : neighbors) {
 		add_edge(c, c_tmp, V_CONST);
-		add_edge(c_tmp, c, V_CONST);
+		// add_edge(c_tmp, c, V_CONST);
 	}
 
 	return;

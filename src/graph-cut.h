@@ -14,7 +14,7 @@ private:
   typedef int node_index;
   typedef int edge_weight;
 
-  edge_weight NULL_DISPARITY = INT_MAX;
+  int NULL_DISPARITY = 0;
 
   edge_weight Cp;
   edge_weight V_smooth;

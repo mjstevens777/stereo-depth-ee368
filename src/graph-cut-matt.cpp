@@ -5,16 +5,20 @@
 #include <boost/graph/read_dimacs.hpp>
 
 using namespace cv;
+using namespace std;
 
 GraphCutDisparity& GraphCutDisparity::compute(StereoPair &_pair)
 {
   pair = &_pair;
 
-  pair->disparity_left = cv::Mat(pair->rows, pair->cols, CV_32S);
-  pair->disparity_right = cv::Mat(pair->rows, pair->cols, CV_32S);
+  pair->disparity_left = cv::Mat(pair->rows, pair->cols, CV_8U);
+  pair->disparity_right = cv::Mat(pair->rows, pair->cols, CV_8U);
 
   pair->disparity_left.setTo(NULL_DISPARITY);
   pair->disparity_right.setTo(NULL_DISPARITY);
+
+  min_disparity = (pair->min_disparity_left < pair->min_disparity_right) ? pair->min_disparity_left : pair->min_disparity_right;
+  max_disparity = (pair->max_disparity_left > pair->max_disparity_right) ? pair->max_disparity_right : pair->max_disparity_left;
 
   while (run_iteration()) {}
 
@@ -26,7 +30,7 @@ GraphCutDisparity::GraphCutDisparity() {
 }
 
 bool GraphCutDisparity::is_active(Correspondence c) {
-  return (pair->disparity_left.at<int>(c.y, c.x) == c.d);
+  return (pair->disparity_left.at<uchar>(c.y, c.x) == c.d);
 }
 
 // within image boundary
@@ -143,11 +147,11 @@ void GraphCutDisparity::add_sink_edge(Correspondence c, edge_weight w)
   return;
 }
 
-void GraphCutDisparity::for_each_active(std::function<void(Correspondence)> fn, int alpha) {
+void GraphCutDisparity::for_each_active(function<void(Correspondence)> fn, int alpha) {
   for (int y = 0; y < pair->rows; y++) {
     for (int x = 0; x < pair->cols; x++) {
       Correspondence c;
-      c.d = pair->disparity_left.at<int>(y, x);
+      c.d = pair->disparity_left.at<uchar>(y, x);
       if (c.d != NULL_DISPARITY and c.d != alpha) {
         c.x = x;
         c.y = y;
@@ -157,7 +161,7 @@ void GraphCutDisparity::for_each_active(std::function<void(Correspondence)> fn, 
   }
 }
 
-void GraphCutDisparity::for_each_alpha(std::function<void(Correspondence)> fn, int alpha) {
+void GraphCutDisparity::for_each_alpha(function<void(Correspondence)> fn, int alpha) {
   for (int y = 0; y < pair->rows; y++) {
     for (int x = 0; x < pair->cols; x++) {
       Correspondence c;
@@ -230,7 +234,7 @@ bool GraphCutDisparity::update_correspondences(int alpha)
 {
   Color black = boost::color_traits<Color>::black();
 
-  bool changed;
+  bool changed = false;
   for_each_active(
     [this, black, &changed](Correspondence c) {
 
@@ -240,13 +244,13 @@ bool GraphCutDisparity::update_correspondences(int alpha)
         return;
       // change to inactive
       changed = true;
-      pair->disparity_left.at<int>(c.y, c.x) = NULL_DISPARITY;
-      pair->disparity_right.at<int>(c.y, c.x + c.d) = NULL_DISPARITY;
+      pair->disparity_left.at<uchar>(c.y, c.x) = NULL_DISPARITY;
+      pair->disparity_right.at<uchar>(c.y, c.x + c.d) = NULL_DISPARITY;
     }
     , alpha
   );
 
-  for_each_active(
+  for_each_alpha(
     [this, alpha, black, &changed](Correspondence c) {
 
       bool was_active = is_active(c);
@@ -258,11 +262,11 @@ bool GraphCutDisparity::update_correspondences(int alpha)
         changed = true;
 
       if (now_active) {
-        pair->disparity_left.at<int>(c.y, c.x) = alpha;
-        pair->disparity_right.at<int>(c.y, c.x + c.d) = alpha;
+        pair->disparity_left.at<uchar>(c.y, c.x) = alpha;
+        pair->disparity_right.at<uchar>(c.y, c.x + c.d) = alpha;
       } else {
-        pair->disparity_left.at<int>(c.y, c.x) = NULL_DISPARITY;
-        pair->disparity_right.at<int>(c.y, c.x + c.d) = NULL_DISPARITY;
+        pair->disparity_left.at<uchar>(c.y, c.x) = NULL_DISPARITY;
+        pair->disparity_right.at<uchar>(c.y, c.x + c.d) = NULL_DISPARITY;
       }
 
     }
@@ -275,12 +279,20 @@ bool GraphCutDisparity::update_correspondences(int alpha)
 
 bool GraphCutDisparity::run_alpha_expansion(int alpha)
 {
+  cout << "Constructing graph for alpha = " << alpha << endl;
   initialize_graph();
 
+  cout << "Adding nodes" << endl;
   add_active_nodes(alpha);
   add_alpha_nodes(alpha);
+
+  cout << "Adding conflict edges" << endl;
   add_all_conflict_edges(alpha);
+
+  cout << "Adding neighbor edges" << endl;
   add_all_neighbor_edges(alpha);
+
+  cout << "Computing..." << endl;
 
   boykov_kolmogorov_max_flow(g, source, sink);
 
@@ -290,8 +302,9 @@ bool GraphCutDisparity::run_alpha_expansion(int alpha)
 
 bool GraphCutDisparity::run_iteration()
 {
+  cout << "Running iteration" << endl;
   bool improved = false;
-  for (int alpha = min_disparity; alpha <= max_disparity; alpha++) {
+  for (int alpha = -max_disparity; alpha <= -min_disparity; alpha++) {
     improved = improved || run_alpha_expansion(alpha);
   }
   return improved;
