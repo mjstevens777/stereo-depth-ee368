@@ -52,15 +52,10 @@ inline int square(int x) {return x * x;}
 GraphCutDisparity::edge_weight GraphCutDisparity::data_cost(Correspondence c)
 {
 
-  Vec3b col1 = pair->left.at<Vec3b>(c.y, c.x);
-  Vec3b col2 = pair->right.at<Vec3b>(c.y, c.x + c.d);
+  Vec3f col1 = pair->left.at<Vec3f>(c.y, c.x);
+  Vec3f col2 = pair->right.at<Vec3f>(c.y, c.x + c.d);
 
-  int cost_sum = 0;
-  for (int channel = 0; channel < 3; ++channel) {
-    cost_sum += square(col1[0] - col2[0]);
-  }
-
-  return cost_sum;
+  return square(cv::norm(col1 - col2));
 }
 
 long GraphCutDisparity::correspondence_hash(Correspondence c)
