@@ -144,8 +144,8 @@ NCCDisparity& NCCDisparity::compute(StereoPair &_pair) {
   pair->rows = pair->left.rows;
   pair->cols = pair->left.cols;
 
-  pair->disparity_left = cv::Mat(pair->rows, pair->cols, CV_8U);
-  pair->disparity_right = cv::Mat(pair->rows, pair->cols, CV_8U);
+  pair->disparity_left = cv::Mat(pair->rows, pair->cols, CV_16S);
+  pair->disparity_right = cv::Mat(pair->rows, pair->cols, CV_16S);
 
   cv::Mat magnitude_left = get_magnitude(pair->left);
   cv::Mat magnitude_right = get_magnitude(pair->right);

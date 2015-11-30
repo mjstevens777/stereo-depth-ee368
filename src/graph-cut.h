@@ -8,6 +8,12 @@ private:
   edge_weight Cp;
   edge_weight V_smooth;
 
+  int min_disparity;
+  int max_disparity;
+
+#include "graph-cut-extra-matt.h"
+
+#include "graph-cut-extra-lucas.h"
 
   typedef struct _Correspondence {
     int x;
@@ -17,23 +23,18 @@ private:
 
   StereoPair *pair;
 
-  cv::Mat disparities;
-  // disparities.at<int>(y, x) = d
-  // type CV_32SC1
-  // disparities = cv::Mat(m, n, CV_32SC1)
+  bool is_active(Correspondence c); // Matt
 
-  bool is_active(Correspondence c);
-
-  bool is_valid(Correspondence c, int alpha);
+  bool is_valid(Correspondence c, int alpha); // Matt
   // within image boundary (use pair variable)
   // active or has disparity alpha
 
   edge_weight data_cost(Correspondence c); // Matt
   // Squared error
 
-  edge_weight occ_cost(Correspondence c);
+  edge_weight occ_cost(Correspondence c); // Lucas
 
-  edge_weight smooth_cost(Correspondence c);
+  edge_weight smooth_cost(Correspondence c); // Lucas
 
   node_index get_index(Correspondence c); // Matt
 
@@ -44,26 +45,31 @@ private:
   // add edge to the graph from c1 to c2
   // use get_index(...)
 
+  void add_source_edge(Correspondence c, edge_weight w); // Matt
+  void add_sink_edge(Correspondence c, edge_weight w); // Matt
 
-  std::vector<Correspondence> get_neighbors(Correspondence c);
+
+  std::vector<Correspondence> get_neighbors(Correspondence c); // Lucas
   // x +- 1, y +- 1, where is_valid
 
-  std::vector<Correspondence> get_conflicts(Correspondence c, int alpha);
+  std::vector<Correspondence> get_conflicts(Correspondence c, int alpha); // Lucas
   // return correspondences that
   //   - share start or end pixel
   //   - have disparity alpha
   //   - where is_valid
   //   - not the same as c
 
-  void add_active_nodes(int alpha);
+  void add_active_node(Correspondence c, int alpha); // Lucas
+  void add_active_nodes(int alpha); // Matt
 
-  void add_alpha_nodes(int alpha);
+  void add_alpha_node(Correspondence c, int alpha); // Lucas
+  void add_alpha_nodes(int alpha); // Matt
 
-  void add_neighbor_edges(Correspondence c, int alpha);
-  void add_all_neighbor_edges(int alpha);
+  void add_neighbor_edges(Correspondence c, int alpha); // Lucas
+  void add_all_neighbor_edges(int alpha); // Matt
 
-  void add_conflict_edges(Correspondence c, int alpha);
-  void add_all_conflict_edges(int alpha);
+  void add_conflict_edges(Correspondence c, int alpha); // Lucas
+  void add_all_conflict_edges(int alpha); // Matt
 
 
   void initialize_graph(); // Matt
@@ -76,4 +82,5 @@ private:
 
 public:
   GraphCutDisparity& compute(StereoPair &pair);
+  GraphCutDisparity();
 };
