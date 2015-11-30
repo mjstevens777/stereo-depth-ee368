@@ -2,13 +2,15 @@
 using namespace std;
 
 GraphCutDisparity::edge_weight GraphCutDisparity::occ_cost(Correspondence c) {
-
+	
+	
 	return 0;
 } 
 
 GraphCutDisparity::edge_weight GraphCutDisparity::smooth_cost(Correspondence c){
+	vector<Correspondence> neighbors = get_neighbors(c,c.d);
 
-	return 0;
+	return V_CONST * neighbors.size();
 } 
 
 vector<GraphCutDisparity::Correspondence> GraphCutDisparity::get_neighbors(Correspondence c, int alpha){
