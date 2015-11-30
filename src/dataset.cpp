@@ -40,6 +40,21 @@ StereoPair::StereoPair(cv::Mat _left, cv::Mat _right,
   return;
 }
 
+void StereoPair::resize(float scale) {
+  cv::resize(left, left, Size(), scale, scale, CV_INTER_CUBIC);
+  cv::resize(right, right, left.size(), 0, 0, CV_INTER_CUBIC);
+  cv::resize(true_disparity_left, true_disparity_left, left.size(), 0, 0, CV_INTER_CUBIC);
+  cv::resize(true_disparity_right, true_disparity_right, left.size(), 0, 0, CV_INTER_CUBIC);
+  multiply(true_disparity_left, Scalar(scale), true_disparity_left);
+  multiply(true_disparity_right, Scalar(scale), true_disparity_right);
+  rows = left.rows;
+  cols = left.cols;
+  min_disparity_left *= scale;
+  max_disparity_left *= scale;
+  min_disparity_right *= scale;
+  max_disparity_right *= scale;
+}
+
 StereoPair StereoDataset::get_stereo_pair(const string dataset, int illumination, int exposure) {
   char path[1024];
   cout  << "Loading" << dataset << illumination << exposure << endl;
