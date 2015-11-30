@@ -4,7 +4,7 @@
 
 using namespace cv;
 
-#define EVAL_BAD_THRESH 1
+#define EVAL_BAD_THRESH 5
 
 /*
   rms of non-occluded regions
