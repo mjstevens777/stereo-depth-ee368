@@ -12,16 +12,16 @@ private:
   int min_disparity;
   int max_disparity;
 
-#include "graph-cut-extra-matt.h"
-
-#include "graph-cut-extra-lucas.h"
-
   typedef struct _Correspondence {
     int x;
     int y;
     int d; // disparity
   } Correspondence;
 
+#include "graph-cut-extra-matt.h"
+
+#include "graph-cut-extra-lucas.h"
+  
   StereoPair *pair;
 
   bool is_active(Correspondence c); // Matt

@@ -1,4 +1,7 @@
 #include "graph-cut.h"
+#include "opencv2/core/core.hpp"
+
+using namespace cv;
 
 GraphCutDisparity& GraphCutDisparity::compute(StereoPair &_pair)
 {
@@ -30,17 +33,40 @@ bool GraphCutDisparity::is_valid(Correspondence c, int alpha) {
 }
 
 
+inline int square(int x) {return x * x;}
+
+// squared error
 GraphCutDisparity::edge_weight GraphCutDisparity::data_cost(Correspondence c)
 {
-  int x1 = c.x;
-  int x2 = c.x + c.d;
-  return 0;
-  // TODO
+
+  Vec3b col1 = pair->left.at<Vec3b>(c.y, c.x);
+  Vec3b col2 = pair->right.at<Vec3b>(c.y, c.x + c.d);
+
+  int cost_sum = 0;
+  for (int channel = 0; channel < 3; ++channel) {
+    cost_sum += square(col1[0] - col2[0]);
+  }
+
+  return cost_sum;
 }
-// Squared error
+
+long GraphCutDisparity::correspondence_hash(Correspondence c)
+{
+  long hash_key = c.x;
+
+  hash_key *= pair->rows;
+  hash_key += c.y;
+
+  hash_key *= (max_disparity - min_disparity + 1);
+  hash_key += (c.d - min_disparity);
+  
+  return hash_key;
+}
 
 GraphCutDisparity::node_index GraphCutDisparity::get_index(Correspondence c)
 {
+  long hash_key = correspondence_hash(c);
+  
   // TODO
   return 0;
 }
