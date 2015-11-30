@@ -52,7 +52,7 @@ private:
   void add_node(Correspondence c); // Matt
   // add node to the graph
 
-  void add_edge(Correspondence c1, Correspondence c2, edge_weight w); // Matt
+  void add_edge(Correspondence c1, Correspondence c2, edge_weight w_uv, edge_weight w_vu); // Matt
   // add edge to the graph from c1 to c2
   // use get_index(...)
 

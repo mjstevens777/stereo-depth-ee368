@@ -19,7 +19,11 @@ GraphCutDisparity& GraphCutDisparity::compute(StereoPair &_pair)
   pair->disparity_right.setTo(NULL_DISPARITY);
 
   min_disparity = (pair->min_disparity_left < pair->min_disparity_right) ? pair->min_disparity_left : pair->min_disparity_right;
+  min_disparity = min_disparity - 2;
+  min_disparity = (min_disparity < 1) ? 1 : min_disparity;
   max_disparity = (pair->max_disparity_left > pair->max_disparity_right) ? pair->max_disparity_left : pair->max_disparity_right;
+  max_disparity = max_disparity + 2;
+  max_disparity = (max_disparity > 255) ? 255 : max_disparity;
 
   left_occlusion_count = cv::Mat(pair->rows, pair->cols, CV_8UC1);
   right_occlusion_count = cv::Mat(pair->rows, pair->cols, CV_8UC1);
@@ -29,7 +33,9 @@ GraphCutDisparity& GraphCutDisparity::compute(StereoPair &_pair)
   cv::imshow("True Disparity", pair->true_disparity_left);
   cv::waitKey(20);
 
-  while (run_iteration()) {}
+  for (int i = 0; i < num_iters; i++) {
+    run_iteration();
+  }
 
   return *this;
 }
@@ -111,22 +117,22 @@ void GraphCutDisparity::add_node(Correspondence c)
 }
 // add node to the graph
 
-void GraphCutDisparity::add_edge(Correspondence c1, Correspondence c2, edge_weight w)
+void GraphCutDisparity::add_edge(Correspondence c1, Correspondence c2,
+    edge_weight w_uv, edge_weight w_vu)
 {
   Vertex u = get_vertex(c1);
   Vertex v = get_vertex(c2);
 
   Edge e, e_reverse;
   tie(e, std::ignore) = boost::add_edge(u, v, g);
-  put(capacities, e, w);
+  tie(e_reverse, std::ignore) = boost::add_edge(v, u, g);
+  put(capacities, e, w_uv);
+  put(capacities, e_reverse, w_vu);
   put(residual_capacities, e, 0);
+  put(residual_capacities, e_reverse, 0);
 
-  bool found;
-  tie(e_reverse, found) = edge(v, u, g);
-  if (found) {
-    put(reverse_edges, e, e_reverse);
-    put(reverse_edges, e_reverse, e);
-  }
+  put(reverse_edges, e, e_reverse);
+  put(reverse_edges, e_reverse, e);
 }
 // add edge to the graph from c1 to c2
 

@@ -1,5 +1,7 @@
 long correspondence_hash(Correspondence c);
 
+int num_iters = 2;
+
 typedef boost::vecS OutEdgeListT;
 typedef boost::vecS VertexListT;
 typedef boost::directedS DirectedT;

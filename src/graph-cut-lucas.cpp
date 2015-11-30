@@ -94,8 +94,9 @@ void GraphCutDisparity::add_neighbor_edges(Correspondence c, int alpha){
 	vector<Correspondence> neighbors = get_neighbors(c,alpha);
 
 	for (Correspondence c_tmp : neighbors) {
-		add_edge(c, c_tmp, V_CONST);
-		// add_edge(c_tmp, c, V_CONST);
+		if (correspondence_hash(c) > correspondence_hash(c_tmp)) {
+			add_edge(c, c_tmp, V_CONST, V_CONST);
+		}
 	}
 
 	return;
@@ -105,8 +106,7 @@ void GraphCutDisparity::add_conflict_edges(Correspondence c, int alpha){
 	vector<Correspondence> conflicts = get_conflicts(c,alpha);
 
 	for (Correspondence c_tmp : conflicts) {
-		add_edge(c, c_tmp, INT_MAX);
-		add_edge(c_tmp, c, C_CONST);
+		add_edge(c, c_tmp, INT_MAX, C_CONST);
 	}
 
 	return;

@@ -15,12 +15,25 @@ int main(int argc, const char *argv[]) {
   srand (time(NULL));
 
  
-  StereoPair pair = dataset.get_random_stereo_pair();
+  StereoPair pair = dataset.get_stereo_pair();
 
   pair.resize(1.0/3.0);
 
-  // NCCDisparity nd(9);
-  // nd.compute(pair);
+  NCCDisparity nd(9);
+  nd.compute(pair);
+
+  cout << "Left rms: " << ErrorMetrics::get_rms_error_all(pair.true_disparity_left,  pair.disparity_left) << "\n";
+  cout << "Right rms: " << ErrorMetrics::get_rms_error_all(pair.true_disparity_right,  pair.disparity_right) << "\n";
+
+  cv::Mat im;
+  pair.true_disparity_left.convertTo(im, CV_8U);
+  cv::imshow("True", im);
+  cv::waitKey(0);
+
+  pair.disparity_left.convertTo(im, CV_8U);
+  cv::imshow("Stereo Pair NCC", im);
+  cv::waitKey(20);
+
 
   GraphCutDisparity gcd;
   gcd.compute(pair);
@@ -28,20 +41,9 @@ int main(int argc, const char *argv[]) {
   cout << "Left rms: " << ErrorMetrics::get_rms_error_all(pair.true_disparity_left,  pair.disparity_left) << "\n";
   cout << "Right rms: " << ErrorMetrics::get_rms_error_all(pair.true_disparity_right,  pair.disparity_right) << "\n";
 
-  cv::namedWindow("Stereo Pair", cv::WINDOW_AUTOSIZE);
-  cv::Mat im;
-  pair.left.convertTo(im, CV_8UC3);
-  cv::imshow("Stereo Pair", im);
-  cv::waitKey(0);   
-
   pair.disparity_left.convertTo(im, CV_8U);
-  cv::imshow("Stereo Pair", im);
-  cv::waitKey(0); 
-
-  pair.true_disparity_left.convertTo(im, CV_8U);
-  cv::imshow("Stereo Pair", im);
-  cv::waitKey(0);
-
+  cv::imshow("Stereo Pair Graph Cut", im);
+  cv::waitKey(20);
 
   return 0;
 }
