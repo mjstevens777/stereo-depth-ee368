@@ -13,16 +13,14 @@ GraphCutDisparity::edge_weight GraphCutDisparity::smooth_cost(Correspondence c){
 
 vector<GraphCutDisparity::Correspondence> GraphCutDisparity::get_neighbors(Correspondence c, int alpha){
 	vector<Correspondence> neighbors;
+	vector<int> offset = {0, 0, 1, -1};
 
 	// x +- 1, y +- 1 neighbors, where is_valid
-	for (int x_offset=-1; x_offset<2; x_offset+=2) {
-		for (int y_offset=-1; y_offset<2; y_offset+=2) {
-	
-			Correspondence c_tmp = {c.x + x_offset, c.y + y_offset, c.d}; 
+	for (int i=0; i<offset.size(); i++) {
+		Correspondence c_tmp = {c.x + offset[i], c.y + offset[offset.size()-1-i], c.d}; 
 
-			if(this->is_valid(c_tmp, alpha) ) {
-				neighbors.push_back(c_tmp);
-			}
+		if(is_valid(c_tmp, alpha) ) {
+			neighbors.push_back(c_tmp);
 		}
 	}
 
@@ -32,13 +30,26 @@ vector<GraphCutDisparity::Correspondence> GraphCutDisparity::get_neighbors(Corre
 vector<GraphCutDisparity::Correspondence> GraphCutDisparity::get_conflicts(Correspondence c, int alpha){
 	vector<Correspondence> conflicts;
 
+	if(is_active(c) and c.d != alpha ) {
+		// check shared pixel
+		Correspondence c_alpha = {c.x, c.y, alpha};
+		if (is_valid(c_alpha, alpha)) {
+			conflicts.push_back(c_alpha);
+		}
 
+		// check shared mapped pixel
+		Correspondence c_mapped = { c.x + c.d - alpha, c.y, alpha};
+		if (is_valid(c_mapped, alpha)) {
+			conflicts.push_back(c_mapped);
+		}
+	}
 
 	return conflicts;
 } 
 
 
 void GraphCutDisparity::add_active_node(Correspondence c, int alpha){
+
 
 	return;
 } 
