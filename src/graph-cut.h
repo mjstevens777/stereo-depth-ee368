@@ -1,3 +1,4 @@
+#pragma once
 #include "disparity-algorithm.h"
 
 class GraphCutDisparity : public DisparityAlgorithm {
