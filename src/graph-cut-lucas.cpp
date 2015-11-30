@@ -2,9 +2,8 @@
 using namespace std;
 
 GraphCutDisparity::edge_weight GraphCutDisparity::occ_cost(Correspondence c) {
-	
-	
-	return 0;
+	//TODO
+	return C_CONST;
 } 
 
 GraphCutDisparity::edge_weight GraphCutDisparity::smooth_cost(Correspondence c){
