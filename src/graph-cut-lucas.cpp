@@ -38,9 +38,6 @@ vector<GraphCutDisparity::Correspondence> GraphCutDisparity::get_conflicts(Corre
 } 
 
 
-
-
-
 void GraphCutDisparity::add_active_node(Correspondence c, int alpha){
 
 	return;
@@ -60,5 +57,4 @@ void GraphCutDisparity::add_conflict_edges(Correspondence c, int alpha){
 
 	return;
 } 
-
 

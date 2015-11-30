@@ -1,1 +1,1 @@
-#pragma once
+long correspondence_hash(Correspondence c);
