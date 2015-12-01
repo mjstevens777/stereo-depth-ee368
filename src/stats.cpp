@@ -74,7 +74,7 @@ int main(int argc, const char *argv[]) {
   stats_stream.open(stats_file);
   stats_stream << "Scale,Algorithm,"
     << "Param1,Param2,"
-    << "Name,"
+    << "Name,Elapsed Time,"
     << "Left RMSE,Right RMSE,"
     << "Left Bias,Right Bias,"
     << "Left Corr,Right Corr,"
@@ -87,9 +87,10 @@ int main(int argc, const char *argv[]) {
     StereoPair pair = dataset.get_stereo_pair(name);
     pair.resize(scale);
 
-
-
+    clock_t start_time = clock();
     alg->compute(pair);
+    clock_t end_time = clock();
+    double elapsed_time = (double) (end_time - start_time) / (double) CLOCKS_PER_SEC;
 
     double rmse_left = ErrorMetrics::get_rms_error_unoccluded(pair.true_disparity_left, pair.disparity_left);
     double rmse_right = ErrorMetrics::get_rms_error_unoccluded(pair.true_disparity_right, pair.disparity_right);
@@ -110,7 +111,7 @@ int main(int argc, const char *argv[]) {
       << alg_name << ","
       << param1 << ","
       << param2 << ","
-      << pair.name << ","
+      << pair.name << "," << elapsed_time << ","
       << rmse_left << "," << rmse_right << ","
       << bias_left << "," << bias_right << ","
       << corr_left << "," << corr_right << ","
