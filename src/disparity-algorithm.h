@@ -3,11 +3,5 @@
 
 class DisparityAlgorithm {
 public:
-  DisparityAlgorithm& compute(StereoPair &pair);
+  virtual DisparityAlgorithm& compute(StereoPair &pair) = 0;
 };
-
-// template<typename Algorithm>
-// static void calculate_disparity(StereoPair &pair) {
-//   Algorithm alg;
-//   alg.compute(pair);
-// }

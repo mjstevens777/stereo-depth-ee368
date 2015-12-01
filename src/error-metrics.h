@@ -3,8 +3,6 @@
 #include <math.h>
 #include <tuple>
 
-using namespace cv;
-
 #define EVAL_BAD_THRESH 5
 
 /*
@@ -16,15 +14,15 @@ using namespace cv;
 class ErrorMetrics {
 
 public:
-	static double get_rms_error_all (const Mat gold_disparity, const Mat guess_disparity) ;
-	static double get_bad_matching_all (const Mat gold_disparity, const Mat guess_disparity) ;
+	static double get_rms_error_all (const cv::Mat gold_disparity, const cv::Mat guess_disparity) ;
+	static double get_bad_matching_all (const cv::Mat gold_disparity, const cv::Mat guess_disparity) ;
 
-  static cv::Mat get_unoccluded (const Mat gold_disparity, const Mat guess_disparity) ;
-  static std::tuple<cv::Mat, cv::Mat, int> get_unoccluded_diff (const Mat gold_disparity, const Mat guess_disparity) ;
+  static cv::Mat get_unoccluded (const cv::Mat gold_disparity, const cv::Mat guess_disparity) ;
+  static std::tuple<cv::Mat, cv::Mat, int> get_unoccluded_diff (const cv::Mat gold_disparity, const cv::Mat guess_disparity) ;
 
-  static double get_rms_error_unoccluded (const Mat gold_disparity, const Mat guess_disparity) ;
-  static double get_correlation_unoccluded (const Mat gold_disparity, const Mat guess_disparity) ;
-  static double get_bias_unoccluded (const Mat gold_disparity, const Mat guess_disparity) ;
-  static double get_r_squared_unoccluded (const Mat gold_disparity, const Mat guess_disparity) ;
-
+  static double get_rms_error_unoccluded (const cv::Mat gold_disparity, const cv::Mat guess_disparity) ;
+  static double get_correlation_unoccluded (const cv::Mat gold_disparity, const cv::Mat guess_disparity) ;
+  static double get_bias_unoccluded (const cv::Mat gold_disparity, const cv::Mat guess_disparity) ;
+  static double get_r_squared_unoccluded (const cv::Mat gold_disparity, const cv::Mat guess_disparity) ;
+  static std::vector<int> get_occlusion_confusion_matrix (const cv::Mat gold_disparity, const cv::Mat guess_disparity);
 };

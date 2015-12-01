@@ -25,6 +25,22 @@ StereoPair::StereoPair(cv::Mat _left, cv::Mat _right,
   cvtColor(true_disparity_left, true_disparity_left, CV_BGR2GRAY);
   cvtColor(true_disparity_right, true_disparity_right, CV_BGR2GRAY);
 
+  for (int i = 0; i < rows; i++) {
+    for (int j = 0; j < cols; j++) {
+      int d_left = true_disparity_left.at<uchar>(i, j);
+      int j_right = j - d_left;
+      if (j_right < 0 || j_right >= cols) {
+        true_disparity_left.at<uchar>(i, j) = 0;
+      }
+
+      int d_right = true_disparity_right.at<uchar>(i, j);
+      int j_left = j + d_right;
+      if (j_left < 0 || j_left >= cols) {
+        true_disparity_right.at<uchar>(i, j) = 0;
+      }
+    }
+  }
+
   double mn, mx;
   cv::Mat nonzero = (true_disparity_left != 0);
   nonzero.convertTo(nonzero, CV_8U);

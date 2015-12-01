@@ -39,6 +39,10 @@ int main(int argc, const char *argv[]) {
   int param1 = 0;
   int param2 = 0;
 
+  stringstream ss;
+  string base_name;
+  DisparityAlgorithm *alg;
+
   if (use_gc) {
     if (argc < 5) {
       cerr << "Must enter Cp and V" << endl;
@@ -48,6 +52,10 @@ int main(int argc, const char *argv[]) {
     V = atoi(argv[4]);
     param1 = Cp;
     param2 = V;
+    alg = new GraphCutDisparity(Cp, V);
+    ss << "results/gc-scale-" << scale
+      << "-Cp-" << Cp << "-V-" << V;
+    base_name = ss.str();
   } else {
     if (argc < 4) {
       cerr << "Must enter window size" << endl;
@@ -55,84 +63,72 @@ int main(int argc, const char *argv[]) {
     }
     window_size = atoi(argv[3]);
     param1 = window_size;
+    alg = new NCCDisparity(window_size);
+    ss << "results/ncc-scale-" << scale
+      << "-w-" << window_size;
+    base_name = ss.str();
   }
+
+  string stats_file = base_name + "-stats.csv";
+  ofstream stats_stream;
+  stats_stream.open(stats_file);
+  stats_stream << "Scale,Algorithm,"
+    << "Param1,Param2,"
+    << "Name,"
+    << "Left RMSE,Right RMSE,"
+    << "Left Bias,Right Bias,"
+    << "Left Corr,Right Corr,"
+    << "Left R2,Right R2,"
+    << "Left tn,Left fp,Left fn,Left tp,"
+    << "Right tn,Right fp,Right fn,Right tp"
+    << endl;
 
   for (string name : dataset.get_all_datasets()) {
     StereoPair pair = dataset.get_stereo_pair(name);
     pair.resize(scale);
-    stringstream ss;
-    string base_name;
-    if (use_gc) {
-      GraphCutDisparity gc(Cp, V);
-      gc.compute(pair);
-      ss << "results/gc-" << pair.name
-        << "-scale-" << scale
-        << "-Cp-" << Cp << "-V-" << V;
-      base_name = ss.str();
-    } else {
-      NCCDisparity ncc(window_size);
-      ncc.compute(pair);
-      ss << "results/ncc-" << pair.name
-        << "-scale-" << scale
-        << "-w-" << window_size;
-      base_name = ss.str();
-    }
+
+
+
+    alg->compute(pair);
+
     double rmse_left = ErrorMetrics::get_rms_error_unoccluded(pair.true_disparity_left, pair.disparity_left);
     double rmse_right = ErrorMetrics::get_rms_error_unoccluded(pair.true_disparity_right, pair.disparity_right);
 
     double bias_left = ErrorMetrics::get_bias_unoccluded(pair.true_disparity_left, pair.disparity_left);
     double bias_right = ErrorMetrics::get_bias_unoccluded(pair.true_disparity_right, pair.disparity_right);
 
+    double corr_left = ErrorMetrics::get_correlation_unoccluded(pair.true_disparity_left, pair.disparity_left);
+    double corr_right = ErrorMetrics::get_correlation_unoccluded(pair.true_disparity_right, pair.disparity_right);
 
-    string stats_file = base_name + "-stats.csv";
-    ofstream stats_stream;
-    stats_stream.open(stats_file);
-    stats_stream << "Scale,Algorithm,Param1,Param2,Name,Left RMSE,Right RMSE,Left Bias,Right Bias" << endl;
+    double r_squared_left = ErrorMetrics::get_r_squared_unoccluded(pair.true_disparity_left, pair.disparity_left);
+    double r_squared_right = ErrorMetrics::get_r_squared_unoccluded(pair.true_disparity_right, pair.disparity_right);
+
+    vector<int> confusion_left = ErrorMetrics::get_occlusion_confusion_matrix(pair.true_disparity_left, pair.disparity_left);
+    vector<int> confusion_right = ErrorMetrics::get_occlusion_confusion_matrix(pair.true_disparity_right, pair.disparity_right);
+
     stats_stream << scale << ","
       << alg_name << ","
       << param1 << ","
       << param2 << ","
       << pair.name << ","
-      << rmse_left << ","
-      << rmse_right << ","
-      << bias_left << ","
-      << bias_right << endl;
-    stats_stream.close();
+      << rmse_left << "," << rmse_right << ","
+      << bias_left << "," << bias_right << ","
+      << corr_left << "," << corr_right << ","
+      << r_squared_left << "," << r_squared_right << ","
+      << confusion_left[0] << "," << confusion_left[1] << ","
+      << confusion_left[2] << "," << confusion_left[3] << ","
+      << confusion_right[0] << "," << confusion_right[1] << ","
+      << confusion_right[2] << "," << confusion_right[3]
+      << endl;
 
-    string left_file = base_name + "-left.png";
-    string right_file = base_name + "-right.png";
+    string left_file = base_name + "-" + pair.name + "-left.png";
+    string right_file = base_name + "-" + pair.name + "-right.png";
+    string true_left_file = base_name + "-" + pair.name + "-left-true.png";
+    string true_right_file = base_name + "-" + pair.name + "-right-true.png";
     cv::imwrite(left_file, pair.disparity_left);
     cv::imwrite(right_file, pair.disparity_right);
+    cv::imwrite(true_left_file, pair.true_disparity_left);
+    cv::imwrite(true_right_file, pair.true_disparity_right);
   }
+  stats_stream.close();
 }
-
-
-// Get the mean squared error for valid correspondences:
- // for (string name : dataset.get_all_datasets()) {
- //    for (int illum : dataset.get_all_illuminations()) {
- //      for (int expo : dataset.get_all_exposures()) {
- //        StereoPair pair = dataset.get_stereo_pair(name, illum, expo);
- //        double err_sum = 0;
- //        int count = 0;
-
- //        for (int i = 0; i < pair.rows; i++) {
- //          for (int j = 0; j < pair.cols; j++) {
- //            int d_left = pair.true_disparity_left.at<uchar>(i, j);
- //            if (d_left == 0) continue;
- //            int j2 = j - d_left;
- //            if (j2 < 0 || j2 >= pair.cols) continue;
- //            count++;
- //            cv::Vec3f col1 = pair.left.at<Vec3f>(i, j);
- //            cv::Vec3f col2 = pair.right.at<Vec3f>(i, j2);
- //            cv::Vec3f col_diff = col1 - col2;
-
- //            err_sum += cv::norm(col_diff) * cv::norm(col_diff);
-
- //          }
- //        }
-
- //        double mse = err_sum / (double) count;
- //        cout << mse << endl;
- //      }
- //    }
- //  }
