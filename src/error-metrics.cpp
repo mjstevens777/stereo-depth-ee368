@@ -119,7 +119,7 @@ double ErrorMetrics::get_r_squared_unoccluded (const Mat gold_disparity, const M
 
 	
 	Mat mean_diff;
-	gold_disparity.copyTo(mean_diff);
+	gold_disparity.convertTo(mean_diff, CV_32FC1);
 	mean_diff.setTo(0, unoccluded_mask == 0);
 	double guess_mean = sum(mean_diff)[0] / (double) num_pixel;
 	mean_diff = mean_diff - guess_mean;
