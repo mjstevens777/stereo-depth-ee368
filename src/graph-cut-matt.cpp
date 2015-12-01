@@ -1,6 +1,5 @@
 #include "graph-cut.h"
 #include "opencv2/core/core.hpp"
-#include "opencv2/highgui/highgui.hpp"
 
 #include <boost/graph/boykov_kolmogorov_max_flow.hpp>
 #include <boost/graph/read_dimacs.hpp>
@@ -30,9 +29,6 @@ GraphCutDisparity& GraphCutDisparity::compute(StereoPair &_pair)
 
   cout << "Searching alpha " << min_disparity << "-" << max_disparity << endl;
 
-  cv::imshow("True Disparity", pair->true_disparity_left);
-  cv::waitKey(20);
-
   for (int i = 0; i < num_iters; i++) {
     run_iteration();
   }
@@ -40,7 +36,9 @@ GraphCutDisparity& GraphCutDisparity::compute(StereoPair &_pair)
   return *this;
 }
 
-GraphCutDisparity::GraphCutDisparity() {
+GraphCutDisparity::GraphCutDisparity(int _Cp, int _V) {
+  Cp = _Cp;
+  V_smooth = _V;
   return;
 }
 
@@ -355,8 +353,6 @@ bool GraphCutDisparity::run_iteration()
   for (int alpha = min_disparity; alpha <= max_disparity; alpha++) {
     improved = run_alpha_expansion(-alpha) || improved;
     // assert(run_alpha_expansion(-alpha) == false);
-    cv::imshow("Disparity", pair->disparity_left);
-    cv::waitKey(20);
   }
   return improved;
 }

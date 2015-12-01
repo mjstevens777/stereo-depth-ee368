@@ -14,9 +14,11 @@ public:
   int min_disparity_left, max_disparity_left;
   int min_disparity_right, max_disparity_right;
 
+  std::string name;
+
   void resize(float scale);
 
   StereoPair(cv::Mat _left, cv::Mat _right,
     cv::Mat _true_left, cv::Mat _true_right,
-    int _base_offset);
+    int _base_offset, std::string _name);
 };

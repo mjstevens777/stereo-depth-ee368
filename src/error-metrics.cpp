@@ -14,6 +14,25 @@ double ErrorMetrics::get_rms_error_all (const Mat gold_disparity, const Mat gues
 	return score;
 }
 
+cv::Mat ErrorMetrics::get_unoccluded (const Mat gold_disparity, const Mat guess_disparity) {
+	cv::Mat gold_unoccluded = (gold_disparity != 0);
+	cv::Mat guess_unoccluded = (guess_disparity != 0);
+
+	return (gold_unoccluded) & (guess_unoccluded);
+}
+
+double ErrorMetrics::get_rms_error_unoccluded (const Mat gold_disparity, const Mat guess_disparity) {
+	cv::Mat unoccluded_mask = get_unoccluded(gold_disparity, guess_disparity);
+	int num_pixel = cv::countNonZero(unoccluded_mask);
+
+	// sqrt(1/num_pixel*sum(diff^2))
+	Mat diff = gold_disparity - guess_disparity;
+	diff.setTo(0, unoccluded_mask == 0);
+	double score = 1/sqrt(num_pixel)* norm(diff,NORM_L2);
+
+	return score;
+}
+
 double ErrorMetrics::get_bad_matching_all (const Mat gold_disparity, const Mat guess_disparity)  {
 	int num_pixel = gold_disparity.rows * gold_disparity.cols;
 
@@ -25,3 +44,27 @@ double ErrorMetrics::get_bad_matching_all (const Mat gold_disparity, const Mat g
 
 	return score;
 }
+
+
+/*
+
+	For unoccluded in both images
+
+	x = guess
+	y = gold
+
+	RMSE = sqrt(mean((x - y)^2))
+	mean bias = mean(x - y)
+	R^2 = 1 - SSres / SStot
+		SSres = sum((x - y)^2)
+		SStot = sum((x - mean(x))^2)
+	Correlation = (sum(x*y) - n*mean(x)*mean(y)) / ( (n - 1) * std(x) * std(y))
+
+	occluded
+	
+	occluded_gold = (gold_disparity == 0);
+	occluded_guess = (guess_disparity == 0);
+
+	cv::countNonZero
+
+*/

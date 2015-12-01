@@ -10,12 +10,13 @@ using namespace cv;
 
 StereoPair::StereoPair(cv::Mat _left, cv::Mat _right,
     cv::Mat _true_left, cv::Mat _true_right,
-    int _base_offset) :
+    int _base_offset, string _name) :
   left(_left),
   right(_right),
   true_disparity_left(_true_left),
   true_disparity_right(_true_right),
-  base_offset(_base_offset)
+  base_offset(_base_offset),
+  name(_name)
 {
   rows = left.rows;
   cols = left.cols;
@@ -57,7 +58,7 @@ void StereoPair::resize(float scale) {
 
 StereoPair StereoDataset::get_stereo_pair(const string dataset, int illumination, int exposure) {
   char path[1024];
-  cout  << "Loading" << dataset << illumination << exposure << endl;
+  // cout  << "Loading" << dataset << illumination << exposure << endl;
   snprintf(path, 1024, left_format, dataset.c_str(), illumination, exposure);
   Mat left = imread(path, CV_LOAD_IMAGE_COLOR);
   snprintf(path, 1024, right_format, dataset.c_str(), illumination, exposure);
@@ -72,7 +73,10 @@ StereoPair StereoDataset::get_stereo_pair(const string dataset, int illumination
   int base_offset;
   offset_file >> base_offset;
 
-  return StereoPair(left, right, true_left, true_right, base_offset);
+  stringstream ss;
+  ss << dataset << illumination << exposure;
+  
+  return StereoPair(left, right, true_left, true_right, base_offset, ss.str());
 }
 
 vector<string> StereoDataset::get_all_datasets() {

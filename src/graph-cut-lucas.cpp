@@ -7,13 +7,13 @@ GraphCutDisparity::edge_weight GraphCutDisparity::occ_cost(Correspondence c) {
 		occ_count++;
 	if (right_occlusion_count.at<uchar>(c.y, c.x + c.d) == 1)
 		occ_count++;
-	return C_CONST * occ_count;
+	return Cp * occ_count;
 } 
 
 GraphCutDisparity::edge_weight GraphCutDisparity::smooth_cost(Correspondence c){
 	vector<Correspondence> neighbors = get_inactive_neighbors(c,c.d);
 
-	return V_CONST * neighbors.size();
+	return V_smooth * neighbors.size();
 } 
 
 vector<GraphCutDisparity::Correspondence> GraphCutDisparity::get_neighbors(Correspondence c, int alpha){
@@ -21,7 +21,7 @@ vector<GraphCutDisparity::Correspondence> GraphCutDisparity::get_neighbors(Corre
 	vector<int> offset = {0, 0, 1, -1};
 
 	// x +- 1, y +- 1 neighbors, where is_valid
-	for (int i=0; i<offset.size(); i++) {
+	for (size_t i=0; i<offset.size(); i++) {
 		Correspondence c_tmp = {c.x + offset[i], c.y + offset[offset.size()-1-i], c.d}; 
 
 		if(is_valid(c_tmp, alpha) ) {
@@ -37,7 +37,7 @@ vector<GraphCutDisparity::Correspondence> GraphCutDisparity::get_inactive_neighb
 	vector<int> offset = {0, 0, 1, -1};
 
 	// x +- 1, y +- 1 neighbors, where is_valid
-	for (int i=0; i<offset.size(); i++) {
+	for (size_t i=0; i<offset.size(); i++) {
 		Correspondence c_tmp = {c.x + offset[i], c.y + offset[offset.size()-1-i], c.d}; 
 
 		if(within_bounds(c_tmp) and !is_valid(c_tmp, alpha) ) {
@@ -95,7 +95,7 @@ void GraphCutDisparity::add_neighbor_edges(Correspondence c, int alpha){
 
 	for (Correspondence c_tmp : neighbors) {
 		if (correspondence_hash(c) > correspondence_hash(c_tmp)) {
-			add_edge(c, c_tmp, V_CONST, V_CONST);
+			add_edge(c, c_tmp, V_smooth, V_smooth);
 		}
 	}
 
@@ -106,7 +106,7 @@ void GraphCutDisparity::add_conflict_edges(Correspondence c, int alpha){
 	vector<Correspondence> conflicts = get_conflicts(c,alpha);
 
 	for (Correspondence c_tmp : conflicts) {
-		add_edge(c, c_tmp, INT_MAX, C_CONST);
+		add_edge(c, c_tmp, INT_MAX, Cp);
 	}
 
 	return;

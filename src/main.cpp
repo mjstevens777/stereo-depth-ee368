@@ -22,8 +22,8 @@ int main(int argc, const char *argv[]) {
   NCCDisparity nd(9);
   nd.compute(pair);
 
-  cout << "Left rms: " << ErrorMetrics::get_rms_error_all(pair.true_disparity_left,  pair.disparity_left) << "\n";
-  cout << "Right rms: " << ErrorMetrics::get_rms_error_all(pair.true_disparity_right,  pair.disparity_right) << "\n";
+  cout << "Left rms: " << ErrorMetrics::get_rms_error_unoccluded(pair.true_disparity_left,  pair.disparity_left) << "\n";
+  cout << "Right rms: " << ErrorMetrics::get_rms_error_unoccluded(pair.true_disparity_right,  pair.disparity_right) << "\n";
 
   cv::Mat im;
   pair.true_disparity_left.convertTo(im, CV_8U);
@@ -35,11 +35,11 @@ int main(int argc, const char *argv[]) {
   cv::waitKey(20);
 
 
-  GraphCutDisparity gcd;
+  GraphCutDisparity gcd(250, 150);
   gcd.compute(pair);
 
-  cout << "Left rms: " << ErrorMetrics::get_rms_error_all(pair.true_disparity_left,  pair.disparity_left) << "\n";
-  cout << "Right rms: " << ErrorMetrics::get_rms_error_all(pair.true_disparity_right,  pair.disparity_right) << "\n";
+  cout << "Left rms: " << ErrorMetrics::get_rms_error_unoccluded(pair.true_disparity_left,  pair.disparity_left) << "\n";
+  cout << "Right rms: " << ErrorMetrics::get_rms_error_unoccluded(pair.true_disparity_right,  pair.disparity_right) << "\n";
 
   pair.disparity_left.convertTo(im, CV_8U);
   cv::imshow("Stereo Pair Graph Cut", im);

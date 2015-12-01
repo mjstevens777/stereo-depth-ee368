@@ -94,5 +94,5 @@ private:
 
 public:
   GraphCutDisparity& compute(StereoPair &pair);
-  GraphCutDisparity();
+  GraphCutDisparity(int _Cp, int _V);
 };

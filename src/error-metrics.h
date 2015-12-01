@@ -18,4 +18,11 @@ public:
 	static double get_rms_error_all (const Mat gold_disparity, const Mat guess_disparity) ;
 	static double get_bad_matching_all (const Mat gold_disparity, const Mat guess_disparity) ;
 
+  static cv::Mat get_unoccluded (const Mat gold_disparity, const Mat guess_disparity) ;
+
+  static double get_rms_error_unoccluded (const Mat gold_disparity, const Mat guess_disparity) ;
+  static double get_correlation_unoccluded (const Mat gold_disparity, const Mat guess_disparity) ;
+  static double get_bias_unoccluded (const Mat gold_disparity, const Mat guess_disparity) ;
+  static double get_r_squared_unoccluded (const Mat gold_disparity, const Mat guess_disparity) ;
+
 };
