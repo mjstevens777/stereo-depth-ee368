@@ -107,8 +107,23 @@ double ErrorMetrics::get_r_squared_unoccluded (const Mat gold_disparity, const M
 	int num_pixel;
 	tie(diff, unoccluded_mask, num_pixel) = get_unoccluded_diff(gold_disparity, guess_disparity);
 
-	// TODO
-	double score = 0;
+	
+	Mat mean_diff;
+	gold_disparity.copyTo(mean_diff);
+	mean_diff.setTo(0, unoccluded_mask == 0);
+	double guess_mean = sum(mean_diff)[0] / (double) num_pixel;
+	cout << "Mean disparity: " << guess_mean << endl;
+	mean_diff = mean_diff - guess_mean;
+	mean_diff.setTo(0, unoccluded_mask == 0);
+
+	Mat mean_diff_sq, diff_sq;
+	pow(mean_diff, 2, mean_diff_sq);
+	pow(diff, 2, diff_sq);
+
+	double ss_res = sum(diff_sq)[0];
+	double ss_tot = sum(mean_diff_sq)[0];
+
+	double score = 1 - ss_res / ss_tot;
 
 	return score;
 }
