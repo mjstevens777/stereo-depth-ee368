@@ -5,3 +5,4 @@ install_manifest.txt
 cmake/**
 data/**
 bin/**
+results/**

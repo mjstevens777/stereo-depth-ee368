@@ -1,9 +1,11 @@
 #include "stereo-dataset.h"
 #include "algorithms.h"
 #include "error-metrics.h"
+#include <opencv2/opencv.hpp>
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
+#include <fstream>
 
 using namespace std;
 
@@ -34,6 +36,8 @@ int main(int argc, const char *argv[]) {
   int Cp = 0;
   int V = 0;
   int window_size = 0;
+  int param1 = 0;
+  int param2 = 0;
 
   if (use_gc) {
     if (argc < 5) {
@@ -42,11 +46,15 @@ int main(int argc, const char *argv[]) {
     }
     Cp = atoi(argv[3]);
     V = atoi(argv[4]);
+    param1 = Cp;
+    param2 = V;
   } else {
     if (argc < 4) {
       cerr << "Must enter window size" << endl;
+      exit(1);
     }
     window_size = atoi(argv[3]);
+    param1 = window_size;
   }
 
   for (string name : dataset.get_all_datasets()) {
@@ -75,11 +83,26 @@ int main(int argc, const char *argv[]) {
     double bias_left = ErrorMetrics::get_bias_unoccluded(pair.true_disparity_left, pair.disparity_left);
     double bias_right = ErrorMetrics::get_bias_unoccluded(pair.true_disparity_right, pair.disparity_right);
 
-    cout << base_name << endl;
-    cout << "Left RMSE: " << rmse_left << endl;
-    cout << "Right RMSE: " << rmse_right << endl;
-    cout << "Left bias: " << bias_left << endl;
-    cout << "Right bias: " << bias_right << endl;
+
+    string stats_file = base_name + "-stats.csv";
+    ofstream stats_stream;
+    stats_stream.open(stats_file);
+    stats_stream << "Scale,Algorithm,Param1,Param2,Name,Left RMSE,Right RMSE,Left Bias,Right Bias" << endl;
+    stats_stream << scale << ","
+      << alg_name << ","
+      << param1 << ","
+      << param2 << ","
+      << pair.name << ","
+      << rmse_left << ","
+      << rmse_right << ","
+      << bias_left << ","
+      << bias_right << endl;
+    stats_stream.close();
+
+    string left_file = base_name + "-left.png";
+    string right_file = base_name + "-right.png";
+    cv::imwrite(left_file, pair.disparity_left);
+    cv::imwrite(right_file, pair.disparity_right);
   }
 }
 

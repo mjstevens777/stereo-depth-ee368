@@ -106,7 +106,7 @@ int NCCDisparity::disparity(cv::Mat t, cv::Mat row, cv::Mat magnitude, int j, bo
   if (left) {
     return j - max_loc_orig;
   } else {
-    return max_loc_orig - left;
+    return max_loc_orig - j;
   }
 }
 
@@ -144,6 +144,9 @@ NCCDisparity& NCCDisparity::compute(StereoPair &_pair) {
   pair->disparity_left = cv::Mat(pair->rows, pair->cols, CV_8U);
   pair->disparity_right = cv::Mat(pair->rows, pair->cols, CV_8U);
 
+  pair->disparity_left.setTo(0);
+  pair->disparity_right.setTo(0);
+
   cv::Mat magnitude_left = get_magnitude(pair->left);
   cv::Mat magnitude_right = get_magnitude(pair->right);
 
@@ -156,7 +159,7 @@ NCCDisparity& NCCDisparity::compute(StereoPair &_pair) {
     cv::Mat mag_row_left = get_row(i, magnitude_left);
     cv::Mat mag_row_right = get_row(i, magnitude_right);
 
-    for (int j = r; j < (pair->rows - r); j++) {
+    for (int j = r; j < (pair->cols - r); j++) {
       cv::Mat t_left = get_template(i, j, true);
       cv::Mat t_right = get_template(i, j, false);
 
