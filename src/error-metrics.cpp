@@ -112,7 +112,6 @@ double ErrorMetrics::get_r_squared_unoccluded (const Mat gold_disparity, const M
 	gold_disparity.copyTo(mean_diff);
 	mean_diff.setTo(0, unoccluded_mask == 0);
 	double guess_mean = sum(mean_diff)[0] / (double) num_pixel;
-	cout << "Mean disparity: " << guess_mean << endl;
 	mean_diff = mean_diff - guess_mean;
 	mean_diff.setTo(0, unoccluded_mask == 0);
 
