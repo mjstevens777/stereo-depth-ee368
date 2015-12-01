@@ -15,7 +15,7 @@ public:
   StereoPair get_stereo_pair(
     const std::string dataset = "Bowling1",
     int illumination=1,
-    int exposure=2);
+    int exposure=1);
 
   std::vector<std::string> get_all_datasets();
   std::vector<int> get_all_illuminations();
