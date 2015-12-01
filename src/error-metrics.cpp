@@ -90,8 +90,18 @@ double ErrorMetrics::get_correlation_unoccluded (const Mat gold_disparity, const
 	int num_pixel;
 	tie(diff, unoccluded_mask, num_pixel) = get_unoccluded_diff(gold_disparity, guess_disparity);
 
-	// TODO
-	double score = 0;
+	Scalar gold_mean, guess_mean;
+  	Scalar gold_std, guess_std;
+
+  	meanStdDev(gold_disparity, gold_mean, gold_std, unoccluded_mask);  	
+  	meanStdDev(guess_disparity, guess_mean, guess_std, unoccluded_mask);
+
+  	Mat guess_gold_mul = guess_disparity.mul(gold_disparity);
+  	guess_gold_mul.setTo(0, unoccluded_mask == 0);
+	double num = sum(guess_gold_mul)[0] - num_pixel*guess_mean[0]*gold_mean[0];
+	double denom = (num_pixel-1)*guess_std[0]*gold_std[0];
+
+	double score = num / denom;
 
 	return score;
 }
