@@ -324,21 +324,21 @@ bool GraphCutDisparity::update_correspondences(int alpha)
 
 bool GraphCutDisparity::run_alpha_expansion(int alpha)
 {
-  cout << "Constructing graph for alpha = " << alpha << endl;
+  // cout << "Constructing graph for alpha = " << alpha << endl;
   initialize_graph();
 
-  cout << "Adding nodes" << endl;
+  // cout << "Adding nodes" << endl;
   record_occlusion_counts(alpha);
   add_active_nodes(alpha);
   add_alpha_nodes(alpha);
 
-  cout << "Adding conflict edges" << endl;
+  // cout << "Adding conflict edges" << endl;
   add_all_conflict_edges(alpha);
 
-  cout << "Adding neighbor edges" << endl;
+  // cout << "Adding neighbor edges" << endl;
   add_all_neighbor_edges(alpha);
 
-  cout << "Computing..." << endl;
+  // cout << "Computing..." << endl;
 
   boykov_kolmogorov_max_flow(g, source, sink);
 
@@ -348,7 +348,7 @@ bool GraphCutDisparity::run_alpha_expansion(int alpha)
 
 bool GraphCutDisparity::run_iteration()
 {
-  cout << "Running iteration" << endl;
+  // cout << "Running iteration" << endl;
   bool improved = false;
   for (int alpha = min_disparity; alpha <= max_disparity; alpha++) {
     improved = run_alpha_expansion(-alpha) || improved;

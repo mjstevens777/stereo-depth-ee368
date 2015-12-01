@@ -1,6 +1,7 @@
 #pragma once
 #include "opencv2/core/core.hpp"
 #include <math.h>
+#include <tuple>
 
 using namespace cv;
 
@@ -19,6 +20,7 @@ public:
 	static double get_bad_matching_all (const Mat gold_disparity, const Mat guess_disparity) ;
 
   static cv::Mat get_unoccluded (const Mat gold_disparity, const Mat guess_disparity) ;
+  static std::tuple<cv::Mat, cv::Mat, int> get_unoccluded_diff (const Mat gold_disparity, const Mat guess_disparity) ;
 
   static double get_rms_error_unoccluded (const Mat gold_disparity, const Mat guess_disparity) ;
   static double get_correlation_unoccluded (const Mat gold_disparity, const Mat guess_disparity) ;

@@ -51,7 +51,7 @@ int main(int argc, const char *argv[]) {
 
   for (string name : dataset.get_all_datasets()) {
     StereoPair pair = dataset.get_stereo_pair(name);
-    pair.resize(0.5);
+    pair.resize(scale);
     stringstream ss;
     string base_name;
     if (use_gc) {
@@ -71,9 +71,15 @@ int main(int argc, const char *argv[]) {
     }
     double rmse_left = ErrorMetrics::get_rms_error_unoccluded(pair.true_disparity_left, pair.disparity_left);
     double rmse_right = ErrorMetrics::get_rms_error_unoccluded(pair.true_disparity_right, pair.disparity_right);
+
+    double bias_left = ErrorMetrics::get_bias_unoccluded(pair.true_disparity_left, pair.disparity_left);
+    double bias_right = ErrorMetrics::get_bias_unoccluded(pair.true_disparity_right, pair.disparity_right);
+
     cout << base_name << endl;
     cout << "Left RMSE: " << rmse_left << endl;
     cout << "Right RMSE: " << rmse_right << endl;
+    cout << "Left bias: " << bias_left << endl;
+    cout << "Right bias: " << bias_right << endl;
   }
 }
 
