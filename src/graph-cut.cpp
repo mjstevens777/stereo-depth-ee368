@@ -7,191 +7,17 @@
 using namespace cv;
 using namespace std;
 
-GraphCutDisparity::edge_weight GraphCutDisparity::occ_cost(Correspondence c) {
-  int occ_count = 0;
-  if (left_occlusion_count.at<uchar>(c.y, c.x) == 1)
-    occ_count++;
-  if (right_occlusion_count.at<uchar>(c.y, c.x + c.d) == 1)
-    occ_count++;
-  return Cp * occ_count;
-} 
-
-GraphCutDisparity::edge_weight GraphCutDisparity::smooth_cost(Correspondence c){
-  vector<Correspondence> neighbors = get_inactive_neighbors(c,c.d);
-
-  return V_smooth * neighbors.size();
-} 
-
-vector<GraphCutDisparity::Correspondence> GraphCutDisparity::get_neighbors(Correspondence c, int alpha){
-  vector<Correspondence> neighbors;
-  vector<int> offset = {0, 0, 1, -1};
-
-  // x +- 1, y +- 1 neighbors, where is_valid
-  for (size_t i=0; i<offset.size(); i++) {
-    Correspondence c_tmp = {c.x + offset[i], c.y + offset[offset.size()-1-i], c.d}; 
-
-    if(is_valid(c_tmp, alpha) ) {
-      neighbors.push_back(c_tmp);
-    }
-  }
-
-  return neighbors;
-} 
-
-vector<GraphCutDisparity::Correspondence> GraphCutDisparity::get_inactive_neighbors(Correspondence c, int alpha){
-  vector<Correspondence> neighbors;
-  vector<int> offset = {0, 0, 1, -1};
-
-  // x +- 1, y +- 1 neighbors, where is_valid
-  for (size_t i=0; i<offset.size(); i++) {
-    Correspondence c_tmp = {c.x + offset[i], c.y + offset[offset.size()-1-i], c.d}; 
-
-    if(within_bounds(c_tmp) and !is_valid(c_tmp, alpha) ) {
-      neighbors.push_back(c_tmp);
-    }
-  }
-
-  return neighbors;
-} 
-
-vector<GraphCutDisparity::Correspondence> GraphCutDisparity::get_conflicts(Correspondence c, int alpha){
-  vector<Correspondence> conflicts;
-
-  if(is_active(c) and c.d != alpha ) {
-    // check shared pixel
-    Correspondence c_alpha = {c.x, c.y, alpha};
-    if (is_valid(c_alpha, alpha)) {
-      conflicts.push_back(c_alpha);
-    }
-
-    // check shared mapped pixel
-    Correspondence c_mapped = { c.x + c.d - alpha, c.y, alpha};
-    if (is_valid(c_mapped, alpha)) {
-      conflicts.push_back(c_mapped);
-    }
-  }
-
-  return conflicts;
-} 
-
-
-void GraphCutDisparity::add_active_node(Correspondence c, int alpha){
-  edge_weight source_w = occ_cost(c);
-  edge_weight sink_w = data_cost(c) + smooth_cost(c);
-
-  add_node(c);
-  add_source_edge(c, source_w);
-  add_sink_edge(c, sink_w);
-  return;
-} 
-
-void GraphCutDisparity::add_alpha_node(Correspondence c, int alpha){
-  edge_weight source_w = data_cost(c);
-  edge_weight sink_w = occ_cost(c);
-
-  add_node(c);
-  add_source_edge(c, source_w);
-  add_sink_edge(c, sink_w);
-
-  return;
-} 
-
-void GraphCutDisparity::add_neighbor_edges(Correspondence c, int alpha){
-  vector<Correspondence> neighbors = get_neighbors(c,alpha);
-
-  for (Correspondence c_tmp : neighbors) {
-    if (correspondence_hash(c) > correspondence_hash(c_tmp)) {
-      add_edge(c, c_tmp, V_smooth, V_smooth);
-    }
-  }
-
-  return;
-} 
-
-void GraphCutDisparity::add_conflict_edges(Correspondence c, int alpha){
-  vector<Correspondence> conflicts = get_conflicts(c,alpha);
-
-  for (Correspondence c_tmp : conflicts) {
-    add_edge(c, c_tmp, INT_MAX, Cp);
-  }
-
-  return;
-} 
-
-
-GraphCutDisparity& GraphCutDisparity::compute(StereoPair &_pair)
-{
-  pair = &_pair;
-
-  pair->disparity_left = cv::Mat(pair->rows, pair->cols, CV_8UC1);
-  pair->disparity_right = cv::Mat(pair->rows, pair->cols, CV_8UC1);
-
-  pair->disparity_left.setTo(NULL_DISPARITY);
-  pair->disparity_right.setTo(NULL_DISPARITY);
-
-  min_disparity = (pair->min_disparity_left < pair->min_disparity_right) ? pair->min_disparity_left : pair->min_disparity_right;
-  min_disparity = min_disparity - 2;
-  min_disparity = (min_disparity < 1) ? 1 : min_disparity;
-  max_disparity = (pair->max_disparity_left > pair->max_disparity_right) ? pair->max_disparity_left : pair->max_disparity_right;
-  max_disparity = max_disparity + 2;
-  max_disparity = (max_disparity > 255) ? 255 : max_disparity;
-
-  left_occlusion_count = cv::Mat(pair->rows, pair->cols, CV_8UC1);
-  right_occlusion_count = cv::Mat(pair->rows, pair->cols, CV_8UC1);
-
-  cout << "Searching alpha " << min_disparity << "-" << max_disparity << endl;
-
-  for (int i = 0; i < num_iters; i++) {
-    run_iteration();
-  }
-
-  return *this;
-}
-
-GraphCutDisparity::GraphCutDisparity(int _Cp, int _V) {
-  Cp = _Cp;
-  V_smooth = _V;
-  return;
-}
+/*******************
+ * Correspondences *
+ *******************/
 
 bool GraphCutDisparity::is_active(Correspondence c) {
   return (pair->disparity_left.at<uchar>(c.y, c.x) == -c.d);
 }
 
-bool GraphCutDisparity::within_bounds(Correspondence c) {
-return (
-    c.x >= 0 and
-    (c.x + c.d) >= 0 and
-    c.y >= 0 and
-    c.x < pair->cols and
-    (c.x + c.d) < pair->cols and
-    c.y < pair->rows
-  );
-}
-
-// within image boundary
-// active or has disparity alpha
-bool GraphCutDisparity::is_valid(Correspondence c, int alpha) {
-  return (
-    within_bounds(c) and
-    (
-      is_active(c) or (c.d == alpha)
-    )
-  );
-}
-
-
-inline int square(int x) {return x * x;}
-
-// squared error
-GraphCutDisparity::edge_weight GraphCutDisparity::data_cost(Correspondence c)
-{
-
-  Vec3f col1 = pair->left.at<Vec3f>(c.y, c.x);
-  Vec3f col2 = pair->right.at<Vec3f>(c.y, c.x + c.d);
-
-  return square(cv::norm(col1 - col2));
-}
+/*****************
+ * Min-Cut Graph *
+ *****************/
 
 long GraphCutDisparity::correspondence_hash(Correspondence c)
 {
@@ -220,12 +46,14 @@ GraphCutDisparity::Vertex GraphCutDisparity::get_vertex(Correspondence c)
 
 void GraphCutDisparity::add_node(Correspondence c)
 {
-  long hash_key = correspondence_hash(c);
+  // Add to graph
   Vertex node = boost::add_vertex(g);
+
+  // Record the index
+  long hash_key = correspondence_hash(c);
   node_index idx = boost::get(vertex_indices, node);
   hash_to_graph_index[hash_key] = idx;
 }
-// add node to the graph
 
 void GraphCutDisparity::add_edge(Correspondence c1, Correspondence c2,
     edge_weight w_uv, edge_weight w_vu)
@@ -234,18 +62,22 @@ void GraphCutDisparity::add_edge(Correspondence c1, Correspondence c2,
   Vertex v = get_vertex(c2);
 
   Edge e, e_reverse;
+  // Add edges
   tie(e, std::ignore) = boost::add_edge(u, v, g);
   tie(e_reverse, std::ignore) = boost::add_edge(v, u, g);
+  // Give edges the appropriate weight
   put(capacities, e, w_uv);
   put(capacities, e_reverse, w_vu);
+
+  // Initialize properties for max flow calculation
   put(residual_capacities, e, 0);
   put(residual_capacities, e_reverse, 0);
-
   put(reverse_edges, e, e_reverse);
   put(reverse_edges, e_reverse, e);
 }
-// add edge to the graph from c1 to c2
 
+
+// See add_edge for details
 void GraphCutDisparity::add_source_edge(Correspondence c, edge_weight w)
 {
   Vertex v = get_vertex(c);
@@ -262,6 +94,7 @@ void GraphCutDisparity::add_source_edge(Correspondence c, edge_weight w)
   return;
 }
 
+// See add_edge for details
 void GraphCutDisparity::add_sink_edge(Correspondence c, edge_weight w)
 {
   Vertex u = get_vertex(c);
@@ -277,6 +110,10 @@ void GraphCutDisparity::add_sink_edge(Correspondence c, edge_weight w)
   put(reverse_edges, e_reverse, e);
   return;
 }
+
+/**************
+ * Cost Model *
+ **************/
 
 void GraphCutDisparity::for_each_active(function<void(Correspondence)> fn, int alpha) {
   for (int y = 0; y < pair->rows; y++) {
@@ -304,42 +141,49 @@ void GraphCutDisparity::for_each_alpha(function<void(Correspondence)> fn, int al
   }
 }
 
-void GraphCutDisparity::add_active_nodes(int alpha)
-{
-  for_each_active(
-    [this, alpha](Correspondence c) { add_active_node(c, alpha); }
-    , alpha
+
+bool GraphCutDisparity::within_bounds(Correspondence c) {
+return (
+    c.x >= 0 and
+    (c.x + c.d) >= 0 and
+    c.y >= 0 and
+    c.x < pair->cols and
+    (c.x + c.d) < pair->cols and
+    c.y < pair->rows
   );
 }
 
-
-void GraphCutDisparity::add_alpha_nodes(int alpha)
-{
-  for_each_alpha(
-    [this, alpha](Correspondence c) { add_alpha_node(c, alpha); }
-    , alpha
+// within image boundary
+// active or has disparity alpha
+bool GraphCutDisparity::is_valid(Correspondence c, int alpha) {
+  return (
+    within_bounds(c) and
+    (
+      is_active(c) or (c.d == alpha)
+    )
   );
 }
 
-void GraphCutDisparity::add_all_neighbor_edges(int alpha)
+inline int square(int x) {return x * x;}
+
+// squared error
+GraphCutDisparity::edge_weight GraphCutDisparity::data_cost(Correspondence c)
 {
-  for_each_active(
-    [this, alpha](Correspondence c) { add_neighbor_edges(c, alpha); }
-    , alpha
-  );
-  for_each_alpha(
-    [this, alpha](Correspondence c) { add_neighbor_edges(c, alpha); }
-    , alpha
-  );
+
+  Vec3f col1 = pair->left.at<Vec3f>(c.y, c.x);
+  Vec3f col2 = pair->right.at<Vec3f>(c.y, c.x + c.d);
+
+  return square(cv::norm(col1 - col2));
 }
 
-void GraphCutDisparity::add_all_conflict_edges(int alpha)
-{
-  for_each_active(
-    [this, alpha](Correspondence c) { add_conflict_edges(c, alpha); }
-    , alpha
-  );
-}
+GraphCutDisparity::edge_weight GraphCutDisparity::occ_cost(Correspondence c) {
+  int occ_count = 0;
+  if (left_occlusion_count.at<uchar>(c.y, c.x) == 1)
+    occ_count++;
+  if (right_occlusion_count.at<uchar>(c.y, c.x + c.d) == 1)
+    occ_count++;
+  return Cp * occ_count;
+} 
 
 void GraphCutDisparity::record_occlusion_count(Correspondence c, int alpha)
 {
@@ -359,6 +203,174 @@ void GraphCutDisparity::record_occlusion_counts(int alpha)
   );
 }
 
+void GraphCutDisparity::add_alpha_nodes(int alpha)
+{
+  for_each_alpha(
+    [this, alpha](Correspondence c) { add_alpha_node(c, alpha); }
+    , alpha
+  );
+}
+
+void GraphCutDisparity::add_alpha_node(Correspondence c, int alpha){
+  edge_weight source_w = data_cost(c);
+  edge_weight sink_w = occ_cost(c);
+
+  add_node(c);
+  add_source_edge(c, source_w);
+  add_sink_edge(c, sink_w);
+
+  return;
+} 
+
+void GraphCutDisparity::add_active_nodes(int alpha)
+{
+  for_each_active(
+    [this, alpha](Correspondence c) { add_active_node(c, alpha); }
+    , alpha
+  );
+}
+
+void GraphCutDisparity::add_active_node(Correspondence c, int alpha){
+  edge_weight source_w = occ_cost(c);
+  edge_weight sink_w = data_cost(c) + smooth_cost(c);
+
+  add_node(c);
+  add_source_edge(c, source_w);
+  add_sink_edge(c, sink_w);
+  return;
+} 
+
+GraphCutDisparity::edge_weight GraphCutDisparity::smooth_cost(Correspondence c){
+  vector<Correspondence> neighbors = get_inactive_neighbors(c,c.d);
+
+  return V_smooth * neighbors.size();
+} 
+
+vector<GraphCutDisparity::Correspondence> GraphCutDisparity::get_inactive_neighbors(Correspondence c, int alpha){
+  vector<Correspondence> neighbors;
+  vector<int> offset = {0, 0, 1, -1};
+
+  // x +- 1, y +- 1 neighbors, where is_valid
+  for (size_t i=0; i<offset.size(); i++) {
+    Correspondence c_tmp = {c.x + offset[i], c.y + offset[offset.size()-1-i], c.d}; 
+
+    if(within_bounds(c_tmp) and !is_valid(c_tmp, alpha) ) {
+      neighbors.push_back(c_tmp);
+    }
+  }
+
+  return neighbors;
+}
+
+void GraphCutDisparity::add_all_conflict_edges(int alpha)
+{
+  for_each_active(
+    [this, alpha](Correspondence c) { add_conflict_edges(c, alpha); }
+    , alpha
+  );
+}
+
+void GraphCutDisparity::add_conflict_edges(Correspondence c, int alpha){
+  vector<Correspondence> conflicts = get_conflicts(c,alpha);
+
+  for (Correspondence c_tmp : conflicts) {
+    add_edge(c, c_tmp, INT_MAX, Cp);
+  }
+
+  return;
+}
+
+vector<GraphCutDisparity::Correspondence> GraphCutDisparity::get_conflicts(Correspondence c, int alpha){
+  vector<Correspondence> conflicts;
+
+  if(is_active(c) and c.d != alpha ) {
+    // check shared pixel
+    Correspondence c_alpha = {c.x, c.y, alpha};
+    if (is_valid(c_alpha, alpha)) {
+      conflicts.push_back(c_alpha);
+    }
+
+    // check shared mapped pixel
+    Correspondence c_mapped = { c.x + c.d - alpha, c.y, alpha};
+    if (is_valid(c_mapped, alpha)) {
+      conflicts.push_back(c_mapped);
+    }
+  }
+
+  return conflicts;
+}
+
+void GraphCutDisparity::add_all_neighbor_edges(int alpha)
+{
+  for_each_active(
+    [this, alpha](Correspondence c) { add_neighbor_edges(c, alpha); }
+    , alpha
+  );
+  for_each_alpha(
+    [this, alpha](Correspondence c) { add_neighbor_edges(c, alpha); }
+    , alpha
+  );
+}
+
+void GraphCutDisparity::add_neighbor_edges(Correspondence c, int alpha){
+  vector<Correspondence> neighbors = get_neighbors(c,alpha);
+
+  for (Correspondence c_tmp : neighbors) {
+    if (correspondence_hash(c) > correspondence_hash(c_tmp)) {
+      add_edge(c, c_tmp, V_smooth, V_smooth);
+    }
+  }
+
+  return;
+} 
+
+vector<GraphCutDisparity::Correspondence> GraphCutDisparity::get_neighbors(Correspondence c, int alpha){
+  vector<Correspondence> neighbors;
+  vector<int> offset = {0, 0, 1, -1};
+
+  // x +- 1, y +- 1 neighbors, where is_valid
+  for (size_t i=0; i<offset.size(); i++) {
+    Correspondence c_tmp = {c.x + offset[i], c.y + offset[offset.size()-1-i], c.d}; 
+
+    if(is_valid(c_tmp, alpha) ) {
+      neighbors.push_back(c_tmp);
+    }
+  }
+
+  return neighbors;
+} 
+
+/*************
+ * Algorithm *
+ *************/
+
+bool GraphCutDisparity::run_iteration()
+{
+  bool improved = false;
+  for (int alpha = min_disparity; alpha <= max_disparity; alpha++) {
+    improved = run_alpha_expansion(-alpha) || improved;
+    // assert(run_alpha_expansion(-alpha) == false);
+  }
+  return improved;
+}
+
+bool GraphCutDisparity::run_alpha_expansion(int alpha)
+{
+  initialize_graph();
+
+  record_occlusion_counts(alpha);
+  add_active_nodes(alpha);
+  add_alpha_nodes(alpha);
+
+  add_all_conflict_edges(alpha);
+
+  add_all_neighbor_edges(alpha);
+
+  // Compute min cut
+  boykov_kolmogorov_max_flow(g, source, sink);
+
+  return update_correspondences(alpha);
+}
 
 void GraphCutDisparity::initialize_graph()
 {
@@ -393,8 +405,6 @@ bool GraphCutDisparity::update_correspondences(int alpha)
       Color col = boost::get(colors, node);
       if (col == black) // still active
         return;
-      // change to inactive
-      // cout << "Deactivating " << c.x << "," << c.y << "," << c.d << endl;
       changed = true;
       pair->disparity_left.at<uchar>(c.y, c.x) = NULL_DISPARITY;
       pair->disparity_right.at<uchar>(c.y, c.x + c.d) = NULL_DISPARITY;
@@ -414,12 +424,10 @@ bool GraphCutDisparity::update_correspondences(int alpha)
       if (now_active != was_active) {
         changed = true;
         if (now_active) {
-          // cout << "Activating " << c.x << "," << c.y << ",alpha" << endl;
           pair->disparity_left.at<uchar>(c.y, c.x) = -c.d;
           pair->disparity_right.at<uchar>(c.y, c.x + c.d) = -c.d;
           assert(is_active(c));
         } else {
-          // cout << "Deactivating " << c.x << "," << c.y << ",alpha" << endl;
           pair->disparity_left.at<uchar>(c.y, c.x) = NULL_DISPARITY;
           pair->disparity_right.at<uchar>(c.y, c.x + c.d) = NULL_DISPARITY;
           assert(!is_active(c));
@@ -432,39 +440,36 @@ bool GraphCutDisparity::update_correspondences(int alpha)
     
   return changed;
 }
-// true if values changed
 
-bool GraphCutDisparity::run_alpha_expansion(int alpha)
+GraphCutDisparity& GraphCutDisparity::compute(StereoPair &_pair)
 {
-  // cout << "Constructing graph for alpha = " << alpha << endl;
-  initialize_graph();
+  pair = &_pair;
 
-  // cout << "Adding nodes" << endl;
-  record_occlusion_counts(alpha);
-  add_active_nodes(alpha);
-  add_alpha_nodes(alpha);
+  pair->disparity_left = cv::Mat(pair->rows, pair->cols, CV_8UC1);
+  pair->disparity_right = cv::Mat(pair->rows, pair->cols, CV_8UC1);
 
-  // cout << "Adding conflict edges" << endl;
-  add_all_conflict_edges(alpha);
+  pair->disparity_left.setTo(NULL_DISPARITY);
+  pair->disparity_right.setTo(NULL_DISPARITY);
 
-  // cout << "Adding neighbor edges" << endl;
-  add_all_neighbor_edges(alpha);
+  min_disparity = (pair->min_disparity_left < pair->min_disparity_right) ? pair->min_disparity_left : pair->min_disparity_right;
+  min_disparity = min_disparity - 2;
+  min_disparity = (min_disparity < 1) ? 1 : min_disparity;
+  max_disparity = (pair->max_disparity_left > pair->max_disparity_right) ? pair->max_disparity_left : pair->max_disparity_right;
+  max_disparity = max_disparity + 2;
+  max_disparity = (max_disparity > 255) ? 255 : max_disparity;
 
-  // cout << "Computing..." << endl;
+  left_occlusion_count = cv::Mat(pair->rows, pair->cols, CV_8UC1);
+  right_occlusion_count = cv::Mat(pair->rows, pair->cols, CV_8UC1);
 
-  boykov_kolmogorov_max_flow(g, source, sink);
-
-  return update_correspondences(alpha);
-}
-// true if values changed
-
-bool GraphCutDisparity::run_iteration()
-{
-  // cout << "Running iteration" << endl;
-  bool improved = false;
-  for (int alpha = min_disparity; alpha <= max_disparity; alpha++) {
-    improved = run_alpha_expansion(-alpha) || improved;
-    // assert(run_alpha_expansion(-alpha) == false);
+  for (int i = 0; i < num_iters; i++) {
+    run_iteration();
   }
-  return improved;
+
+  return *this;
+}
+
+GraphCutDisparity::GraphCutDisparity(int _Cp, int _V) {
+  Cp = _Cp;
+  V_smooth = _V;
+  return;
 }
