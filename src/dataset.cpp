@@ -25,6 +25,7 @@ StereoPair::StereoPair(cv::Mat _left, cv::Mat _right,
   cvtColor(true_disparity_left, true_disparity_left, CV_BGR2GRAY);
   cvtColor(true_disparity_right, true_disparity_right, CV_BGR2GRAY);
 
+  // Mark disparities that map to out-of-bounds pixels as occlusions
   for (int i = 0; i < rows; i++) {
     for (int j = 0; j < cols; j++) {
       int d_left = true_disparity_left.at<uchar>(i, j);
@@ -41,6 +42,8 @@ StereoPair::StereoPair(cv::Mat _left, cv::Mat _right,
     }
   }
 
+  // Use the ground truth to find the minimum and maximum disparity
+  // to bound the search problem.
   double mn, mx;
   cv::Mat nonzero = (true_disparity_left != 0);
   nonzero.convertTo(nonzero, CV_8U);
@@ -57,6 +60,7 @@ StereoPair::StereoPair(cv::Mat _left, cv::Mat _right,
   return;
 }
 
+// Used for shrinking the image to speed up computation
 void StereoPair::resize(float scale) {
   cv::resize(left, left, Size(), scale, scale, CV_INTER_CUBIC);
   cv::resize(right, right, left.size(), 0, 0, CV_INTER_CUBIC);
